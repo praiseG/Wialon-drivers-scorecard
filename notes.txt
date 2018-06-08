@@ -1,0 +1,17 @@
+Using
+---------
+- JQuery Datatables - filters,search,sort and file export (excel, pdf, print) - https://datatables.net/
+- JQuery Underscore for Client-Side Templating - http://underscorejs.org/
+- Wialon API - https://sdk.wialon.com - GPS Tracking
+- Bootstrap for layout design - https://getbootstrap.com/
+- JQuery Cookie - A simple, lightweight jQuery plugin for reading, writing and deleting cookies - https://github.com/carhartl/jquery-cookie#readme
+- Leaflet - JavaScript library for interactive maps - https://leafletjs.com/
+- Flot: Attractive JavaScript plotting for jQuery - https://www.flotcharts.org/
+- JQuery MouseWheel - A jQuery plugin that adds cross-browser mouse wheel support. - https://github.com/jquery/jquery-mousewheel
+- JQuery Localisation - A simple javascript/jquery library to translate your website - https://github.com/tomneutens/jquery-localisation
+
+Steps
+-------
+1. Design Front Template and Datatables
+2. Setup Report Templates using underscorejs
+3. Code the required functions 
