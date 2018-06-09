@@ -1,8 +1,56 @@
+body{
+    font-size: 12px !important;
+}
 .navbar{
-    border-bottom: 1.4px solid red;
+    /* border-bottom: 1.4px solid red; */
     margin-bottom: 0px;
 }
 
 .navbar-brand{
     padding: 0px;
 }
+
+.dashboard-bg{
+    background-image: url("../img/dashboard.jpg");
+    background-repeat: no-repeat;
+    background-size: 1110px 70px;
+    opacity: 0.8;
+}
+
+.row-resized{
+    margin-left: 0px !important;
+    margin-right: 0px !important;
+    margin-bottom: 30px;
+    height: 60px;
+    /* border-radius: .3rem; */
+    border-bottom-left-radius: .3rem;
+    border-bottom-right-radius: .3erm;
+    border-bottom: 1.4px solid red;
+    border-top: 1.4px solid red;
+}
+
+.jumbotron-3d {
+    padding: 4px 2px !important;
+}
+
+.row-3d{
+    margin-left: 0px !important;
+    margin-right: 0px !important;
+    border-bottom: 3px solid #E9ECEF;
+    margin-bottom: 30px;
+    border-radius: .3rem;
+}
+
+.btn-toolbar > *,
+.btn-group > * {
+  font-size: 12px !important;
+}
+
+.btn-group{
+    padding-left: 10px !important;
+}
+
+.select-option{
+    border: 2px solid #E9ECEF !important;
+}
+
