@@ -11,22 +11,22 @@ body{
 }
 
 .dashboard-bg{
-    background-image: url("../img/dashboard.jpg");
+    background-image: url("../img/dashboard-bg.png");
     background-repeat: no-repeat;
-    background-size: 1110px 70px;
+    /* background-size: 1110px 70px; */
     opacity: 0.8;
 }
 
 .row-resized{
     margin-left: 0px !important;
     margin-right: 0px !important;
-    margin-bottom: 30px;
+    margin-bottom: 35px;
     height: 60px;
     /* border-radius: .3rem; */
     border-bottom-left-radius: .3rem;
     border-bottom-right-radius: .3erm;
     border-bottom: 1.4px solid red;
-    border-top: 1.4px solid red;
+    border-top: 1.4px solid #864146;
 }
 
 .jumbotron-3d {
@@ -37,7 +37,7 @@ body{
     margin-left: 0px !important;
     margin-right: 0px !important;
     border-bottom: 3px solid #E9ECEF;
-    margin-bottom: 30px;
+    margin-bottom: 20px;
     border-radius: .3rem;
 }
 
@@ -54,3 +54,9 @@ body{
     border: 2px solid #E9ECEF !important;
 }
 
+.report-heading{
+    color: #AAAAAB !important;
+    font-weight: bold;
+    margin: 35px auto;
+    font-size: 17px;
+}
