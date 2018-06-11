@@ -42,12 +42,18 @@ body{
 }
 
 .btn-toolbar > *,
-.btn-group > * {
+.btn-group > *, .form-inline > * {
   font-size: 12px !important;
 }
 
-.btn-group{
-    padding-left: 10px !important;
+.pl-20{
+    padding-left: 20px !important;
+}
+
+.form-control-3d{
+    width: 113px !important;
+    border-radius: 0px !important;
+    padding: 4px 10px;
 }
 
 .select-option{

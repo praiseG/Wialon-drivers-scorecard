@@ -81,6 +81,16 @@
                   <input type="radio" name="options" id="option3" autocomplete="off"> Custom
                 </label>
             </div>
+            <div class="form-inline picker-fields pl-20">
+                <input type="text" class="form-control form-control-3d pl-4" id="fromDate" value="2018-09-20"> - 
+                <input type="text" class="form-control form-control-3d pl-4" id="toDate" value="2018-09-30">             
+                <button type="button" class="btn btn-sm btn-secondary ml-2">OK</button>
+            </div>
+            <div class="form-inline picker-display pl-20">
+                    <button type="button" class="btn btn-sm btn-secondary mr-1" id="prevDate"><i class="fas fa-caret-left"></i></button>
+                    <input type="text" class="form-control form-control-3d pl-4" id="selDate" value="2018-09-20" disabled>             
+                    <button type="button" class="btn btn-sm btn-secondary ml-1" id="nextDate"><i class="fas fa-caret-right"></i></button>
+            </div>
         </div>
         <table id="myTable" class="display" style="width:100%">
             <thead>
