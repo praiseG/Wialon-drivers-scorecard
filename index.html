@@ -21,7 +21,8 @@
     
    
     <!-- <script src="./js/jquery/jquery-3.3.1.slim.min.js"></script> -->
-    <script src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <!-- <script type="text/javascript" src="https//code.jquery.com/jquery-1.12.4.js"></script> -->
     <script src="./js/bootstrap/bootstrap.min.js"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/1.10.16/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.5.1/js/dataTables.buttons.min.js"></script>
@@ -33,9 +34,10 @@
     <script type="text/javascript" src="
     https://cdn.datatables.net/buttons/1.5.1/js/buttons.html5.min.js"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.5.1/js/buttons.print.min.js"></script>
-    <script src="./js/jquery/jquery-ui.min.js"></script>
-    <script src="./js/date/date.js"></script>
-    <script src="./js/3dsc.js"></script>
+    <script type="text/javascript" src="./js/jquery/jquery-ui.min.js"></script>
+    <script type="text/javascript" src="./js/cookies/js.cookie.js"></script>
+    <script type="text/javascript" src="./js/date/date.js"></script>
+    <script type="text/javascript" src="./js/3dsc.js"></script>
 
   </head>
   <body>
@@ -84,14 +86,14 @@
                   <input type="radio" name="options" id="cDate" autocomplete="off"> Custom
                 </label>
             </div>
-            <div class="form-inline picker-fields pl-20">
-                <input type="text" class="form-control form-control-3d pl-4" id="fromDate" value="2018-09-20"> - 
-                <input type="text" class="form-control form-control-3d pl-4" id="toDate" value="2018-09-30">             
+            <div class="form-inline picker-fields pl-20" style="display: none;">
+                <input type="text" class="form-control form-control-3d pl-4" id="fromDate" value=""> - 
+                <input type="text" class="form-control form-control-3d pl-4" id="toDate" value="">             
                 <button type="button" class="btn btn-sm btn-secondary ml-2">OK</button>
             </div>
             <div class="form-inline picker-display pl-20">
                     <button type="button" class="btn btn-sm btn-secondary mr-1" id="prevDate"><i class="fas fa-caret-left"></i></button>
-                    <input type="text" class="form-control form-control-3d pl-4" id="selDate" value="2018-09-20" disabled>             
+                    <input type="text" class="form-control form-control-3d pl-4" id="selDate" value="" disabled>             
                     <button type="button" class="btn btn-sm btn-secondary ml-1" id="nextDate"><i class="fas fa-caret-right"></i></button>
             </div>
         </div>

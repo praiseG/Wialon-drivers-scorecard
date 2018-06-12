@@ -56,6 +56,11 @@ body{
     padding: 4px 10px;
 }
 
+.form-control-sel{
+    width: 180px !important;
+}
+
+
 .select-option{
     border: 2px solid #E9ECEF !important;
 }
