@@ -14,6 +14,7 @@
     <link rel="stylesheet" type="text/css" href="./css/bootstrap/bootstrap.min.css"/>
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.16/css/jquery.dataTables.min.css"/>
     <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/1.5.1/css/buttons.dataTables.min.css"/>
+    <link rel="stylesheet" type="text/css" href="https://code.jquery.com/ui/1.12.1/themes/hot-sneaks/jquery-ui.css"/>
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.13/css/all.css" integrity="sha384-DNOHZ68U8hZfKXOrtjWvjxusGo9WQnrNx2sqG0tfsghAvtVlRW3tvkXWZh58N9jp" crossorigin="anonymous">
     <link href="//fonts.googleapis.com/css?family=Lato&subset=latin,latin-ext" rel="stylesheet">
     <link rel="stylesheet" type="text/css" href="./css/3dsc.css"/>
@@ -32,6 +33,8 @@
     <script type="text/javascript" src="
     https://cdn.datatables.net/buttons/1.5.1/js/buttons.html5.min.js"></script>
     <script type="text/javascript" src="https://cdn.datatables.net/buttons/1.5.1/js/buttons.print.min.js"></script>
+    <script src="./js/jquery/jquery-ui.min.js"></script>
+    <script src="./js/date/date.js"></script>
     <script src="./js/3dsc.js"></script>
 
   </head>
@@ -50,35 +53,35 @@
     </nav>
     <div class="container">
         <div class="row dashboard-bg row-resized" id="units">
-            <p class="report-heading">Drivers List Report</p>
+            <p class="report-heading" id="reportTitle">Drivers Score Card</p>
         </div> 
         <div class="row row-3d">
             <div class="float-left">
-                <select class="custom-select">
+                <select class="custom-select" id="rTemplates">
                     <option class="select-option" selected>Select Report Template</option>
-                    <option class="select-option" value="0">Drivers Score Card</option>
-                    <option class="select-option"  value="1">Drivers List Report</option>
-                    <option class="select-option" value="2">Vehicles List Report</option>
-                    <option class="select-option" value="3">Trips Details Report</option>
-                    <option class="select-option" value="3">Events Details Report</option>
-                    <option class="select-option" value="3">Cycle Time Report</option>
+                    <option class="select-option" value="Drivers Score Card" id="t_dsc">Drivers Score Card</option>
+                    <option class="select-option"  value="Drivers List Report" id="t_dlr">Drivers List Report</option>
+                    <option class="select-option" value="Vehicles List Report" id="t_vlr">Vehicles List Report</option>
+                    <option class="select-option" value="Trips Details Report" id="t_tdr">Trips Details Report</option>
+                    <option class="select-option" value="Events Details Report" id="t_edr">Events Details Report</option>
+                    <option class="select-option" value="Cycle Time Report" id="t_ctr">Cycle Time Report</option>
                 </select>
             </div>
-            <div class="btn-group btn-group-toggle" data-toggle="buttons">
+            <div class="btn-group btn-group-toggle ml-4" data-toggle="buttons" id="dTargets">
                 <label class="btn btn-outline-secondary active">
-                  <input type="radio" name="options" id="option1" autocomplete="off" checked> Yesterday
+                  <input type="radio" name="options" id="yDate" autocomplete="off" checked> Yesterday
                 </label>
                 <label class="btn btn-outline-secondary">
-                  <input type="radio" name="options" id="option2" autocomplete="off"> Today
+                  <input type="radio" name="options" id="tDate" autocomplete="off"> Today
                 </label>
                 <label class="btn btn-outline-secondary">
-                  <input type="radio" name="options" id="option3" autocomplete="off"> Week
+                  <input type="radio" name="options" id="wDate" autocomplete="off"> Week
                 </label>
                 <label class="btn btn-outline-secondary">
-                  <input type="radio" name="options" id="option3" autocomplete="off"> Month
+                  <input type="radio" name="options" id="mDate" autocomplete="off"> Month
                 </label>
                 <label class="btn btn-outline-secondary">
-                  <input type="radio" name="options" id="option3" autocomplete="off"> Custom
+                  <input type="radio" name="options" id="cDate" autocomplete="off"> Custom
                 </label>
             </div>
             <div class="form-inline picker-fields pl-20">

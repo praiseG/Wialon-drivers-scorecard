@@ -1,3 +1,8 @@
+Targets
+-----------
+ - Work on TimePicker dynamics
+ - Work on Driver's ScoreCard
+ 
 Using
 ---------
 - JQuery Datatables - filters,search,sort and file export (excel, pdf, print) - https://datatables.net/
