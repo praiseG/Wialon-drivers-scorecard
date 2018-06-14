@@ -653,18 +653,29 @@
             </thead>
             <tbody>
                 <tr>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                     <td><img src="./img/progress.gif" width="50px"></td>
-                    <td><img src="./img/progress.gif" width="50px"></td>
-                    <td><img src="./img/progress.gif" width="50px"></td>
-                    <td><img src="./img/progress.gif" width="50px"></td>
-                    <td><img src="./img/progress.gif" width="50px"></td>
-                    <td><img src="./img/progress.gif" width="50px"></td>
-                    <td><img src="./img/progress.gif" width="50px"></td>
-                    <td><img src="./img/progress.gif" width="50px"></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                 </tr>             
             </tbody>
         </table>
     </script>
-
+    <script type="text/template" id="dlr-data">
+        <tr>
+            <td><%= drv.id %></td>
+            <td><%= drv.transporter_id %></td>
+            <td><% if(drv.icon_url){ %><img src=<%= vhl.icon_url %> width="20px"><% } %><%= drv.name %></td>
+            <td><%= drv.driver_id %></td>
+            <td><%= drv.driver_license %></td>
+            <td><%= drv.site_name %></td>
+            <td><%= drv.site_id %></td>
+            <td><%= drv.license_expiry %></td>
+        </tr>   
+    </script>
   </body>
 </html>
