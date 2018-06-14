@@ -61,8 +61,8 @@ body{
 }
 
 
-.select-option{
-    border: 2px solid #E9ECEF !important;
+select > option{
+    border-bottom: 2px solid #E9ECEF !important;
 }
 
 .report-heading{
