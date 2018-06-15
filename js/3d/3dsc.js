@@ -193,7 +193,7 @@ var fetchUnits = function(){
     sess.loadLibrary("itemIcon"); // load Icon Library	
     sess.loadLibrary("itemCustomFields"); //IMPORTANT! for loading custom fields needed loaded library "itemCustomFields"
 
-    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields);
+    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields);
 
 
     var all_units = [];
@@ -208,7 +208,7 @@ var fetchUnits = function(){
         var dt = $("#vlr-tbl").dataTable().api();
         for (var i = 0; i< units.length; i++){ // construct Select object using found units
           var u = units[i]; // current unit in cycle
-          console.log(u);
+        //   console.log(u);
         var u_site_name = "unknown";
         var u_site_id = "unknown";
         var u_year = "unknown";
@@ -231,12 +231,13 @@ var fetchUnits = function(){
           var u_time = 'unknown';
           var u_address = 'unknown';
           var u_pos = u.getPosition();
+          console.log(u_pos);
           if(u_pos){
             u_time = wialon.util.DateTime.formatTime(u_pos.t);
-            wialon.util.Gis.getLocations([{lon:u_pos.x, lat:u_pos.y}], function(code, address){ 
-                if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
-                u_address = address; // print message to log
-            });
+            // wialon.util.Gis.getLocations([{lon:u_pos.x, lat:u_pos.y}], function(code, address){ 
+            //     if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
+            //     u_address = address; // print message to log
+            // });
           }
          
           var unit = {
@@ -265,60 +266,75 @@ var fetchUnits = function(){
 };
 
 var fetchDrivers = function(){
-    console.log("fetching Drivers");
     var sess = wialon.core.Session.getInstance(); // get instance of current Session
 
     sess.loadLibrary("resourceDrivers"); // load Icon Library	
     sess.loadLibrary("itemCustomFields"); //IMPORTANT! for loading custom fields needed loaded library "itemCustomFields"
     // flags to specify what kind of data should be returned
 
-    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base, wialon.item.Resource.dataFlag.drivers, wialon.item.Resource.dataFlag.driverUnits, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields);
+    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base, wialon.item.Resource.dataFlag.drivers, wialon.item.Resource.dataFlag.driverUnits, wialon.item.Item.dataFlag.customFields);
 
     sess.updateDataFlags( // load items to current session
         [{type: "type", data: "avl_resource", flags: flags, mode: 0}], // Items specification
         function (code) { // updateDataFlags callback
             if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
             // get loaded 'avl_unit's items  
-            var res_id = wialon.core.Session.getInstance().getCurrUser().getId();
-            var drivers = sess.getItem(res_id).getDrivers();
-            if (!drivers || !drivers.length){ console.log("Drivers not found"); return; } // check if units found
+            var ress = sess.getItems("avl_resource");
+            console.log("***************resources**********");
+            console.log(ress);
+            console.log("***************resources**********");
+            if (!ress || !ress.length){ console.log("No Resources found"); return; } // check if resources were found
             var dt = $("#dlr-tbl").dataTable().api();
-            for (var i = 0; i< drivers.length; i++){ 
-                var d = drivers[i];
-                console.log(d);
-                var d_site_name = "unknown";
-                var d_site_id = "unknown";
-                var d_license = "unknown";
-                var u_license_expiry = "unknown";
-                var  cusFields = _.values(d.getCustomFields());
-                if(_.size(cusFields) > 0){
-                  _.each(cusFields,function(cField, index, list){
-                    if(cField.n = "Site Name") d_site_name = cField.v;
-                    else if(cField.n = "Site ID") d_site_id = cField.v;
-                    else if(cField.n = "License ID") d_license = cField.v;
-                    else if(cField.n = "License Expiry") d_license_expiry = cField.v;
-                  });
+            for (var i = 0; i< ress.length; i++){ 
+                var d_res = ress[i];
+                var d_res_name = d_res.getName();
+                var drivers = _.values(d_res.getDrivers());
+                console.log("res: " + d_res_name);
+
+                if(_.size(drivers) > 0){
+                    for (var j = 0; j< drivers.length; j++){ 
+                        var dr = drivers[j];
+                        console.log("--------dr-------------------");
+                        console.log(dr);
+                        var d_name = dr.n;
+                        var d_site_name = "unknown";
+                        var d_site_id = "unknown";
+                        var d_license = "unknown";
+                        var d_license_expiry = "unknown";
+                        // var cusFields = _.values(dr.getCustomFields());
+                        // if(_.size(cusFields) > 0){
+                        //     _.each(cusFields,function(cField, index, list){
+                        //         if(cField.n = "Site Name") d_site_name = cField.v;
+                        //         else if(cField.n = "Site ID") d_site_id = cField.v;
+                        //         else if(cField.n = "License ID") d_license = cField.v;
+                        //         else if(cField.n = "License Expiry") d_license_expiry = cField.v;
+                        //     });
+                        // }
+                        var driver = {
+                            "id": j+1,
+                            // "icon_url": d.getDriverImageUr(32),
+                            "icon_url": null,
+                            "transporter_id": d_res_name, 
+                            "name": d_name, 
+                            "driver_id": dr.id, 
+                            "driver_license": d_license, 
+                            "site_name": d_site_name, 
+                            "site_id": d_site_id,
+                            "license_expiry": d_license_expiry
+                            };
+                        // console.log("driver one");
+                        // console.log(driver);
+                        var dlrTemp = _.template($("#dlr-data").html());
+                        dt.row.add($(dlrTemp({"drv": driver}))); 
+                    }
                 }
-                var d_name = u.getName();
-                
-                var driver = {
-                    "id": i+1,
-                    "icon_url": d.getDriverImageUr(32),
-                    "transporter_id": d.getId(), 
-                    "name": d_name, 
-                    "driver-id": d.getId(), 
-                    "driver_license": d-d_license, 
-                    "site_name": d_site_name, 
-                    "site_id": d_site_id,
-                    "license_expiry": d_license_expiry
-                    };
-                all_units.push(unit);
-                var vhlTemp = _.template($("#dlr-data").html());
-                dt.row.add($(vhlTemp({"drv": driver})));
-            }
-             dt.row(0).remove().draw(); 
-          }
-       );
+            }   
+            dt.row(0).remove().draw();         
+    });
+};
+
+var getDriverScoreFactors = function(){
+    console.log("loading");
 };
 
 var vlrReport = function(){
@@ -338,7 +354,8 @@ var vlrReport = function(){
         ]
     });
     fetchUnits();
-}
+};
+
 var dlrReport = function(){
     var cTitles = _.template($("#dlr-cols").html());
     $("#rpt-table").empty();
@@ -357,7 +374,40 @@ var dlrReport = function(){
     });
 
     fetchDrivers();
-}
+};
+
+var dscReport = function(){
+    var cTitles = _.template($("#dsc-cols").html());
+    $("#rpt-table").empty();
+    $("#rpt-table").html(cTitles);
+    $('#dsc-tbl').DataTable( {
+        dom: 'Bfrtip',
+        buttons: [
+            'csv', 
+            {
+                extend: 'excelHtml5',
+                title: 'Drivers Score Card'
+            },
+            'pdf', 
+            'print'
+        ],
+        "columnDefs": [
+            {
+                "targets": [ 3 ],
+                "visible": false,
+                "searchable": false
+            },
+            {
+                "targets": [ 4 ],
+                "visible": false
+            }
+        ]
+    });
+
+    getDriverScoreFactors();
+};
+
+
 // Appropriate report templates
 var loadReportTemplate = function(rTemp){
     console.log(rTemp);
@@ -366,30 +416,27 @@ var loadReportTemplate = function(rTemp){
     }else if(rTemp == "t-vlr"){
         vlrReport();
     }
+    else if(rTemp == "t-dsc"){
+        dscReport();
+    }
     //--first load template with a progress bar then update it with info fetched if any
 };
+
 var onLoad = function(){
     // load wialon.js
 	// var url = getHtmlVar("baseUrl") || getHtmlVar("hostUrl") || "https://hst-api.wialon.com";
     loadScript("https://hst-api.wialon.com/wsdk/script/wialon.js", initSdk);
-    
+   
 };
 
 
-  $(document).ready( function () {
+$(document).ready( function () {
     onLoad();
     
-    $('#myTable').DataTable( {
-        dom: 'Bfrtip',
-        buttons: [
-            'csv', 'excel', 'pdf', 'print'
-        ]
-    } );
-
     var aTarget = $(".active").children("input").prop("id");
     getDates(aTarget);
 
-    //--Get Dates/ranges of clicked period buttons and display them accordingly
+        //--Get Dates/ranges of clicked period buttons and display them accordingly
     $("#dTargets label").on('click',function(){
         var target = $(this).children("input").prop("id");
         getDates(target);
@@ -405,5 +452,8 @@ var onLoad = function(){
         //store load selected template
         loadReportTemplate(sTemp);
     });
+
+ 
+    loadReportTemplate("t-dsc");
 
 } );
