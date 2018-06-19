@@ -1,6 +1,14 @@
 /// Global event handlers
 var callbacks = {};
 
+var getTransporterFromUnitName = function(unit_name){
+    if(!unit_name) return;
+    start = unit_name.indexOf("(");
+    end = unit_name.indexOf(")");
+    transporter = unit_name.slice(start+1, end);
+    unit_license = unit_name.slice(0, start);
+    return {"transporter":transporter, "unit_license": unit_license }
+}
 //Date/DtePicker functions
 var showPickerFields = function(){
     //pick variables from cookie
@@ -192,8 +200,12 @@ var fetchUnits = function(){
 
     sess.loadLibrary("itemIcon"); // load Icon Library	
     sess.loadLibrary("itemCustomFields"); //IMPORTANT! for loading custom fields needed loaded library "itemCustomFields"
+    sess.loadLibrary("itemProfileFields"); //IMPORTANT! for loading custom fields needed loaded library "itemProfileFields"
+    sess.loadLibrary("unitDriveRankSettings");
+    sess.loadLibrary("unitTripDetector");
 
-    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields);
+
+    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields, wialon.item.Item.dataFlag.customProps, wialon.item.Item.dataFlag.guid, 256, 8388608);
 
 
     var all_units = [];
@@ -204,59 +216,77 @@ var fetchUnits = function(){
         if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
         // get loaded 'avl_unit's items  
         var units = sess.getItems("avl_unit");
+        units = wialon.util.Helper.filterItems(units, wialon.item.Item.accessFlag.execReports);
         if (!units || !units.length){ console.log("Units not found"); return; } // check if units found
         var dt = $("#vlr-tbl").dataTable().api();
         for (var i = 0; i< units.length; i++){ // construct Select object using found units
-          var u = units[i]; // current unit in cycle
-        //   console.log(u);
+        var u = units[i]; // current unit in cycle
+        var u_name = u.getName();
+        // devType = u.getDeviceTypeId();
+        if(u_name.endsWith("(Cam)")) continue;
+        console.log(u);
+        console.log("profiles here");
+        console.log(u.getResource);
+        console.log("trips here");
+        // console.log(u.getAdminFields());
         var u_site_name = "unknown";
         var u_site_id = "unknown";
         var u_year = "unknown";
         var u_make = "unknown";
         var u_model ="unknown";
         var u_vhl_vin = "unknown";
-          var  cusFields = _.values(u.getCustomFields());
-          if(_.size(cusFields) > 0){
-              _.each(cusFields,function(cField, index, list){
-                if(cField.n = "Site Name") u_site_name = cField.v;
-                else if(cField.n = "Site ID") u_site_id = cField.v;
-                else if(cField.n = "Vehicle Year") u_year = cField.v;
-                else if(cField.n = "Vehicle Make") u_make = cField.v;
-                else if(cField.n = "Vehicle Model") u_model = cField.v;
-                else if(cField.n = "Vehicle VIN") u_vhl_vin = cField.v;
-              });
-            
-          }
-          var u_name = u.getName();
-          var u_time = 'unknown';
-          var u_address = 'unknown';
-          var u_pos = u.getPosition();
-          console.log(u_pos);
-          if(u_pos){
-            u_time = wialon.util.DateTime.formatTime(u_pos.t);
-            // wialon.util.Gis.getLocations([{lon:u_pos.x, lat:u_pos.y}], function(code, address){ 
-            //     if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
-            //     u_address = address; // print message to log
-            // });
-          }
-         
-          var unit = {
-              "id": i+1,
-              "icon_url": u.getIconUrl(32),
-              "transporter_id": u.getId(), 
-              "license_number": u_name, 
-              "vin": u_vhl_vin, 
-              "year_mke_model": u_year + "/" + u_make + "/" + u_model, 
-              "site_name": u_site_name, 
-              "site_id": u_site_id,
-              "ivms_id": u.getUniqueId(),
-              "last_gps_conn": u_time,
-              "last_trip_dt": u_time
-            };
-          all_units.push(unit);
-          var vhlTemp = _.template($("#vlr-data").html());
-          dt.row.add($(vhlTemp({"vhl": unit})));
-         }
+        var  cusFields = _.values(u.getCustomFields());
+        
+        if(_.size(cusFields) > 0){
+            _.each(cusFields,function(cField, index, list){
+            if(cField.n = "Site_Name") u_site_name = cField.v;
+            else if(cField.n = "Site_ID") u_site_id = cField.v;
+            });
+        
+        }
+        var  profileFields = _.values(u.getProfileFields());
+        
+        if(_.size(profileFields) > 0){
+            _.each(profileFields,function(pField, index, list){
+            if(pField.n = "year") u_year = pField.v;
+            else if(pField.n = "brand") u_make = pField.v;
+            else if(pField.n = "model") u_model = pField.v;
+            else if(pField.n = "vin") u_vhl_vin = pField.v;
+            });
+        
+        }
+        var u_time = 'unknown';
+        var u_address = 'unknown';
+        var u_pos = u.getPosition();
+        console.log(u_pos);
+        if(u_pos){
+        u_time = wialon.util.DateTime.formatTime(u_pos.t);
+        // wialon.util.Gis.getLocations([{lon:u_pos.x, lat:u_pos.y}], function(code, address){ 
+        //     if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
+        //     u_address = address; // print message to log
+        // });
+        }
+        u_dets = getTransporterFromUnitName(u_name);
+        tp_id = u_dets["transporter"];
+        u_lic = u_dets["unit_license"];
+        var unit = {
+            "id": i+1,
+            "icon_url": u.getIconUrl(32),
+            "transporter_id": tp_id, 
+            "license_number": u_lic, 
+            "vin": u_vhl_vin, 
+            "year_mke_model": u_year + "/" + u_make + "/" + u_model, 
+            "site_name": u_site_name, 
+            "site_id": u_site_id,
+            "ivms_id": u.getUniqueId(),
+        //   "ivms_id": u.getDeviceTypeId(),
+            "last_gps_conn": u_time,
+            "last_trip_dt": u_time
+        };
+        all_units.push(unit);
+        var vhlTemp = _.template($("#vlr-data").html());
+        dt.row.add($(vhlTemp({"vhl": unit})));
+        }
          dt.row(0).remove().draw();
         //  dt.draw();  
         //  var vhlTemp = _.template($("#vlr-data").html());
@@ -268,7 +298,8 @@ var fetchUnits = function(){
 var fetchDrivers = function(){
     var sess = wialon.core.Session.getInstance(); // get instance of current Session
 
-    sess.loadLibrary("resourceDrivers"); // load Icon Library	
+    sess.loadLibrary("resourceDrivers");
+    sess.loadLibrary("resourceDriverUnits");// load Icon Library	
     sess.loadLibrary("itemCustomFields"); //IMPORTANT! for loading custom fields needed loaded library "itemCustomFields"
     // flags to specify what kind of data should be returned
 
@@ -294,9 +325,96 @@ var fetchDrivers = function(){
                 if(_.size(drivers) > 0){
                     for (var j = 0; j< drivers.length; j++){ 
                         var dr = drivers[j];
+                        var d_name = dr.n;
+                        d_id = dr.id;
                         console.log("--------dr-------------------");
                         console.log(dr);
+                        console.log("drier Units");
+                        console.log(d_res.getDriverUnits());
+                        console.log(" Units after");
+                        var d_site_name = "unknown";
+                        var d_site_id = "unknown";
+                        var d_ivms_id = "unknown";
+                        var d_license = "unknown";
+                        var d_license_expiry = "unknown";
+                        var cusFields = dr.jp;
+                        console.log("cusf");
+                        console.log(cusFields);
+                        console.log(_.size(cusFields));
+                        console.log(_.has(cusFields, "Site Name"));
+                        if(_.size(cusFields) > 0){
+                            if(_.has(cusFields, "Site Name")) d_site_name = cusFields["Site Name"];
+                            if(_.has(cusFields, "IVMS ID")) d_ivms_id = cusFields["IVMS ID"];
+                            if(_.has(cusFields, "Site ID")) d_site_id = cusFields["Site ID"];
+                            if(_.has(cusFields, "License ID")) d_license = cusFields["License ID"];
+                            if(_.has(cusFields, "License Expiry")) d_license_expiry = cusFields["License Expiry"];
+                            console.log("site_name in:" +  d_site_name);
+                        }
+                        console.log("site_name out:" +  d_site_name);
+                        var driver = {
+                            "id": j+1,
+                            // "icon_url": d.getDriverImageUr(32),
+                            "icon_url": null,
+                            "transporter_id": d_res_name, 
+                            "name": d_name, 
+                            "driver_id": d_ivms_id, 
+                            "driver_license": d_license, 
+                            "site_name": d_site_name, 
+                            "site_id": d_site_id,
+                            "license_expiry": d_license_expiry
+                            };
+                        // console.log("driver one");
+                        // console.log(driver);
+                        var dlrTemp = _.template($("#dlr-data").html());
+                        dt.row.add($(dlrTemp({"drv": driver}))); 
+                    }
+                }
+            }   
+            dt.row(0).remove().draw();         
+    });
+};
+
+var getDriverScoreFactors = function(){
+    console.log("loading");
+};
+
+var getDriverScoreFactors2 = function(){
+    var sess = wialon.core.Session.getInstance(); // get instance of current Session
+
+    sess.loadLibrary("resourceDrivers");
+    sess.loadLibrary("resourceDriverUnits");// load Icon Library	
+    sess.loadLibrary("itemCustomFields"); //IMPORTANT! for loading custom fields needed loaded library "itemCustomFields"
+    // flags to specify what kind of data should be returned
+
+    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base, wialon.item.Resource.dataFlag.drivers, wialon.item.Resource.dataFlag.driverUnits, wialon.item.Item.dataFlag.customFields);
+
+    sess.updateDataFlags( // load items to current session
+        [{type: "type", data: "avl_resource", flags: flags, mode: 0}], // Items specification
+        function (code) { // updateDataFlags callback
+            if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
+            // get loaded 'avl_unit's items  
+            var ress = sess.getItems("avl_resource");
+            console.log("***************resources**********");
+            console.log(ress);
+            console.log("***************resources**********");
+            if (!ress || !ress.length){ console.log("No Resources found"); return; } // check if resources were found
+            var dt = $("#dlr-tbl").dataTable().api();
+            for (var i = 0; i< ress.length; i++){ 
+                var d_res = ress[i];
+                var d_res_name = d_res.getName();
+                var drivers = _.values(d_res.getDrivers());
+                console.log("res: " + d_res_name);
+
+                if(_.size(drivers) > 0){
+                    for (var j = 0; j< drivers.length; j++){ 
+                        var dr = drivers[j];
                         var d_name = dr.n;
+                        d_id = dr.id;
+                        console.log("--------dr-------------------");
+                        console.log(dr);
+                        console.log("drier Units");
+                        console.log(d_res.getDriverUnits(d_id));
+                        console.log(" Units after");
                         var d_site_name = "unknown";
                         var d_site_id = "unknown";
                         var d_license = "unknown";
@@ -310,6 +428,7 @@ var fetchDrivers = function(){
                         //         else if(cField.n = "License Expiry") d_license_expiry = cField.v;
                         //     });
                         // }
+                        
                         var driver = {
                             "id": j+1,
                             // "icon_url": d.getDriverImageUr(32),
@@ -331,10 +450,6 @@ var fetchDrivers = function(){
             }   
             dt.row(0).remove().draw();         
     });
-};
-
-var getDriverScoreFactors = function(){
-    console.log("loading");
 };
 
 var vlrReport = function(){
