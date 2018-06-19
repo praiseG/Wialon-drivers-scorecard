@@ -279,7 +279,6 @@ var fetchUnits = function(){
             "site_name": u_site_name, 
             "site_id": u_site_id,
             "ivms_id": u.getUniqueId(),
-        //   "ivms_id": u.getDeviceTypeId(),
             "last_gps_conn": u_time,
             "last_trip_dt": u_time
         };
@@ -301,9 +300,10 @@ var fetchDrivers = function(){
     sess.loadLibrary("resourceDrivers");
     sess.loadLibrary("resourceDriverUnits");// load Icon Library	
     sess.loadLibrary("itemCustomFields"); //IMPORTANT! for loading custom fields needed loaded library "itemCustomFields"
+    sess.loadLibrary("resourceReports");
     // flags to specify what kind of data should be returned
 
-    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base, wialon.item.Resource.dataFlag.drivers, wialon.item.Resource.dataFlag.driverUnits, wialon.item.Item.dataFlag.customFields);
+    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base, wialon.item.Resource.dataFlag.drivers, wialon.item.Resource.dataFlag.driverUnits, wialon.item.Item.dataFlag.customFields, wialon.item.Resource.dataFlag.reports);
 
     sess.updateDataFlags( // load items to current session
         [{type: "type", data: "avl_resource", flags: flags, mode: 0}], // Items specification
@@ -319,6 +319,9 @@ var fetchDrivers = function(){
             for (var i = 0; i< ress.length; i++){ 
                 var d_res = ress[i];
                 var d_res_name = d_res.getName();
+                console.log("***************reports**********");
+                console.log(d_res.getReports());
+                console.log("***************reports**********");
                 var drivers = _.values(d_res.getDrivers());
                 console.log("res: " + d_res_name);
 
@@ -374,9 +377,107 @@ var fetchDrivers = function(){
     });
 };
 
-var getDriverScoreFactors = function(){
+var getDriverScoreFactors1 = function(){
     console.log("loading");
 };
+
+function getTableValue(data) { // calculate ceil value
+	if (typeof data == "object")
+		if (typeof data.t == "string") return data.t; else return "";
+	else return data;
+}
+
+var showRptResult = function(result){ // show result after report execute
+    var tables = result.getTables(); // get report tables
+    console.log("tables");
+    console.log(tables);
+	if (!tables) return; // exit if no tables
+	for(var i=0; i < tables.length; i++){ // cycle on tables
+		// html contains information about one table
+		var html = "<b>"+ tables[i].label +"</b><div><table style='width:100%'>";
+		
+		var headers = tables[i].header; // get table headers
+		html += "<tr>"; // open header row
+		for (var j=0; j<headers.length; j++) // add header
+			html += "<th>" + headers[j] + "</th>";
+		html += "</tr>"; // close header row
+		result.getTableRows(i, 0, tables[i].rows, // get Table rows
+			qx.lang.Function.bind( function(html, code, rows) { // getTableRows callback
+				if (code) {console.log(wialon.core.Errors.getErrorText(code)); return;} // exit if error code
+                for(var j in rows) { // cycle on table rows
+                    console.log("rows============");
+                    console.log(rows);
+					if (typeof rows[j].c == "undefined") continue; // skip empty rows
+					html += "<tr"+(j%2==1?" class='odd' ":"")+">"; // open table row
+					for (var k = 0; k < rows[j].c.length; k++) // add ceils to table
+						html += "<td>" + getTableValue(rows[j].c[k]) + "</td>";
+					html += "</tr>";// close table row
+				}
+                html += "</table>";
+                console.log("html============");
+                console.log(html);
+				$("#reprt-data").prepend(html +"</div><br />");
+			}, this, html)
+		);
+	}
+}
+var getDriverScoreFactors = function(){
+    var sess = wialon.core.Session.getInstance(); // get instance of current Session
+
+    sess.loadLibrary("resourceReports"); // load Reports Library
+
+    var res_flags = wialon.item.Item.dataFlag.base | wialon.item.Resource.dataFlag.reports;
+    var unit_flags = wialon.item.Item.dataFlag.base;
+
+    // reportTempID = 39 Eco Drv per Veh, 33 over speeding per truck
+    // 
+    
+    sess.updateDataFlags( // load items to current session
+		[{type: "type", data: "avl_resource", flags:res_flags , mode: 0}, 
+		 {type: "type", data: "avl_unit", flags: unit_flags, mode: 0}], // 'avl_unit's specification
+		function (code) { // updateDataFlags callback
+            if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
+            
+            var ress = sess.getItems("avl_resource"); // get loaded 'avl_resource's items
+            if (!ress || !ress.length){ console.log("Resources not found"); return; } // check if resources found
+            
+            var res = ress[0];
+
+            console.log("res here");
+            console.log(res);
+            var id_ec_rtmp = 39;
+            var id_os_rtmp = 33;
+
+            var to = sess.getServerTime();
+            var from = to - parseInt(2592000, 10);
+
+            var interval = { "from": from, "to": to, "flags": wialon.item.MReport.intervalFlag.absolute };
+
+            var template = res.getReport(id_ec_rtmp); // get report template by id
+
+		
+			var units = sess.getItems("avl_unit"); // get loaded 'avl_units's items
+			if (!units || !units.length){ console.log("Units not found"); return; } // check if units found
+			for (var i = 0; i< units.length; i++) {
+                unit = units[i];
+                unit_id = unit.getId();
+                res.execReport(template, unit_id, 0, interval, // execute selected report
+                    function(code, data) { // execReport template
+                        console.log("data=========");
+                        console.log(data);
+                        console.log("code");
+                        console.log(code);
+                        if(code){ console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
+                        if(!data.getTables().length){ // exit if no tables obtained
+                            console.log("There is no data generated"); return; }
+                        // else showReportResult(data); // show report result
+                        else showRptResult(data);
+                });
+            }
+		}
+	);
+};
+
 
 var getDriverScoreFactors2 = function(){
     var sess = wialon.core.Session.getInstance(); // get instance of current Session
