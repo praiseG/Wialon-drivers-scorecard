@@ -1,6 +1,5 @@
 /// Global event handlers
 var callbacks = {};
-var MEASURE = null;
 
 var getTransporterFromUnitName = function(unit_name){
     if(!unit_name) return;
@@ -167,15 +166,10 @@ function login(code){
       alert("Login Error");
       return;
     }
-
-    wialon.core.Remote.getInstance().startBatch("initBatch");
-    var user = wialon.core.Session.getInstance().getCurrUser();
-    
-    MEASURE = user.getMeasureUnits();
-
-    var username = user.getName();
+    var username = wialon.core.Session.getInstance().getCurrUser().getName();
     document.getElementById("username").innerHTML = username;
     
+    // execReport();
     window.onbeforeunload = function () {
 		wialon.core.Session.getInstance().logout();
 	};
@@ -201,6 +195,81 @@ function login(code){
       wialon.core.Session.getInstance().duplicate(sid, user, true, login);
     }
   }
+
+var execReport22 = function() {
+    console.log("inside execReport");
+    var sess = wialon.core.Session.getInstance();
+    var t_to = sess.getServerTime();
+    var t_from = t_to - parseInt(604800, 10);
+    // var interval= [t_from, t_to];
+	// General batch
+	var params = [
+	{ // exec report
+		svc: 'report/get_report_data',
+		params:{
+			'ItemId': wialon.core.Session.getInstance().getCurrUser().getAccountId(),
+			'col': [49]
+		}
+	}, 
+	{ // get driving behavior result
+		svc: 'report/select_result_rows',
+		params: {
+			'tableIndex': 0,
+			'config': {
+				'type': 'range',
+				'data': {
+					'from': 0,
+					'to': 0xFFFF,
+					'level': 1,
+					'rawValues': 1
+				}
+			}
+		}
+	}, 
+	{ // get unit trips
+		svc: 'report/select_result_rows',
+		params: {
+			'tableIndex': 1,
+			'config': {
+				'type': 'range',
+				'data': {
+					'from': 0,
+					'to': 0xFFFF,
+					'level': 1,
+					'rawValues': 1
+				}
+			}
+		}
+	}, 
+	{ // cleanup report result
+		svc: 'report/cleanup_result',
+		params: {}
+	}];
+
+	wialon.core.Remote.getInstance().remoteCall('core/batch', params, function (code, obj) {
+        console.log("obj outside");
+        console.log(code);
+        console.log(obj);
+        console.log("obj out end");
+		if (code === 0 && obj && obj.length && obj.length == 4 && !('error' in obj[0]) && ('reportResult' in obj[0])) {
+
+            console.log("obj");
+            console.log(obj);
+		}
+	});
+};
+
+var clearReportResult = function() {
+    console.log("inside clear report  result");
+    var sess = wialon.core.Session.getInstance();
+    
+	wialon.core.Remote.getInstance().remoteCall('report/cleanup_result', {}, function (code, obj) {
+       
+        if(code){ console.log(wialon.core.Errors.getErrorText(code)); return; }
+        console.log("clear code");
+        console.log(code);
+	});
+};
 //Fetch all Units
 var fetchUnits = function(){
     var sess = wialon.core.Session.getInstance(); // get instance of current Session
@@ -209,10 +278,13 @@ var fetchUnits = function(){
     sess.loadLibrary("itemCustomFields"); //IMPORTANT! for loading custom fields needed loaded library "itemCustomFields"
     sess.loadLibrary("itemProfileFields"); //IMPORTANT! for loading custom fields needed loaded library "itemProfileFields"
     sess.loadLibrary("unitDriveRankSettings");
+    sess.loadLibrary("unitEvents");
     sess.loadLibrary("unitTripDetector");
 
 
-    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields, wialon.item.Item.dataFlag.customProps, wialon.item.Item.dataFlag.guid, 256, 8388608);
+    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields, wialon.item.Item.dataFlag.customProps, wialon.item.Item.dataFlag.guid, 256, 8388608, 131072);
+
+    // var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,4611686018427387903);
 
 
     var all_units = [];
@@ -232,9 +304,16 @@ var fetchUnits = function(){
         // devType = u.getDeviceTypeId();
         if(u_name.endsWith("(Cam)")) continue;
         console.log(u);
-        console.log("profiles here");
-        console.log(u.getResource);
-        console.log("trips here");
+        if(u.getTripsHistory()){
+            console.log("trips history here");
+            console.log(u.getTripsHistory());
+            console.log("trips hist here");
+        }
+        if(u.getCurrentTrip()){
+            console.log("trips here");
+            console.log(u.getCurrUser());
+            console.log("trips here");
+        }
         // console.log(u.getAdminFields());
         var u_site_name = "unknown";
         var u_site_id = "unknown";
@@ -284,8 +363,9 @@ var fetchUnits = function(){
             "vin": u_vhl_vin, 
             "year_mke_model": u_year + "/" + u_make + "/" + u_model, 
             "site_name": u_site_name, 
-            "site_id": u_site_id,
+            "site_id": u.getId(),
             "ivms_id": u.getUniqueId(),
+        //   "ivms_id": u.getDeviceTypeId(),
             "last_gps_conn": u_time,
             "last_trip_dt": u_time
         };
@@ -305,15 +385,15 @@ var fetchDrivers = function(){
     var sess = wialon.core.Session.getInstance(); // get instance of current Session
 
     sess.loadLibrary("resourceDrivers");
-    sess.loadLibrary("resourceDriverUnits");// load Icon Library	
+    sess.loadLibrary("resourceDriverUnits");
+    sess.loadLibrary("itemDriver");
     sess.loadLibrary("itemCustomFields"); //IMPORTANT! for loading custom fields needed loaded library "itemCustomFields"
-    sess.loadLibrary("resourceReports");
     // flags to specify what kind of data should be returned
 
-    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base, wialon.item.Resource.dataFlag.drivers, wialon.item.Resource.dataFlag.driverUnits, wialon.item.Item.dataFlag.customFields, wialon.item.Resource.dataFlag.reports);
+    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base, wialon.item.Resource.dataFlag.drivers, wialon.item.Resource.dataFlag.driverUnits, wialon.item.Item.dataFlag.customFields, 16384);
 
     sess.updateDataFlags( // load items to current session
-        [{type: "type", data: "avl_resource", flags: flags, mode: 0}], // Items specification
+        [{type: "type", data: "avl_resource", flags: flags, mode: 0},{type: "type", data: "avl_unit", flags: flags, mode: 0}], // Items specification
         function (code) { // updateDataFlags callback
             if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
             // get loaded 'avl_unit's items  
@@ -326,32 +406,37 @@ var fetchDrivers = function(){
             for (var i = 0; i< ress.length; i++){ 
                 var d_res = ress[i];
                 var d_res_name = d_res.getName();
-                console.log("***************reports**********");
-                console.log(d_res.getReports());
-                console.log("***************reports**********");
                 var drivers = _.values(d_res.getDrivers());
                 console.log("res: " + d_res_name);
-
+                console.log("reports");
+                // console.log(d_res.getReports());
                 if(_.size(drivers) > 0){
                     for (var j = 0; j< drivers.length; j++){ 
                         var dr = drivers[j];
                         var d_name = dr.n;
-                        d_id = dr.id;
+                        var d_id = dr.id;
                         console.log("--------dr-------------------");
                         console.log(dr);
-                        console.log("drier Units");
-                        console.log(d_res.getDriverUnits());
-                        console.log(" Units after");
                         var d_site_name = "unknown";
                         var d_site_id = "unknown";
                         var d_ivms_id = "unknown";
                         var d_license = "unknown";
                         var d_license_expiry = "unknown";
+                        var d_tp_id = "N/A";
+                        if(dr.bu){
+                            console.log("driver Units");
+                            var unit_h = sess.getItem(dr.bu);
+                            var u_dets = getTransporterFromUnitName(unit_h.getName());
+                            d_tp_id = u_dets["transporter"];
+                            console.log(dr.bu);
+                            console.log(unit_h);
+                            console.log("Units after");
+                        }
                         var cusFields = dr.jp;
-                        console.log("cusf");
-                        console.log(cusFields);
-                        console.log(_.size(cusFields));
-                        console.log(_.has(cusFields, "Site Name"));
+                        // console.log("cusf");
+                        // console.log(cusFields);
+                        // console.log(_.size(cusFields));
+                        // console.log(_.has(cusFields, "Site Name"));
                         if(_.size(cusFields) > 0){
                             if(_.has(cusFields, "Site Name")) d_site_name = cusFields["Site Name"];
                             if(_.has(cusFields, "IVMS ID")) d_ivms_id = cusFields["IVMS ID"];
@@ -365,7 +450,7 @@ var fetchDrivers = function(){
                             "id": j+1,
                             // "icon_url": d.getDriverImageUr(32),
                             "icon_url": null,
-                            "transporter_id": d_res_name, 
+                            "transporter_id": d_tp_id, 
                             "name": d_name, 
                             "driver_id": d_ivms_id, 
                             "driver_license": d_license, 
@@ -384,103 +469,56 @@ var fetchDrivers = function(){
     });
 };
 
-
-function getTableValue(data) { // calculate ceil value
-	if (typeof data == "object")
-		if (typeof data.t == "string") return data.t; else return "";
-	else return data;
-}
-
-var showRptResult = function(result){ // show result after report execute
-    var tables = result.getTables(); // get report tables
-    console.log("tables");
-    console.log(tables);
-	if (!tables) return; // exit if no tables
-	for(var i=0; i < tables.length; i++){ // cycle on tables
-		// html contains information about one table
-		var html = "<b>"+ tables[i].label +"</b><div><table style='width:100%'>";
-		
-		var headers = tables[i].header; // get table headers
-		html += "<tr>"; // open header row
-		for (var j=0; j<headers.length; j++) // add header
-			html += "<th>" + headers[j] + "</th>";
-		html += "</tr>"; // close header row
-		result.getTableRows(i, 0, tables[i].rows, // get Table rows
-			qx.lang.Function.bind( function(html, code, rows) { // getTableRows callback
-				if (code) {console.log(wialon.core.Errors.getErrorText(code)); return;} // exit if error code
-                for(var j in rows) { // cycle on table rows
-                    console.log("rows============");
-                    console.log(rows);
-					if (typeof rows[j].c == "undefined") continue; // skip empty rows
-					html += "<tr"+(j%2==1?" class='odd' ":"")+">"; // open table row
-					for (var k = 0; k < rows[j].c.length; k++) // add ceils to table
-						html += "<td>" + getTableValue(rows[j].c[k]) + "</td>";
-					html += "</tr>";// close table row
-				}
-                html += "</table>";
-                console.log("html============");
-                console.log(html);
-				$("#reprt-data").prepend(html +"</div><br />");
-			}, this, html)
-		);
-	}
-}
+var getDriverScoreFactors2 = function(){
+    console.log("loading");
+};
 
 var getDriverScoreFactors = function(){
-    var sess = wialon.core.Session.getInstance(); // get instance of current Session
-
-    sess.loadLibrary("resourceReports"); // load Reports Library
-
     var res_flags = wialon.item.Item.dataFlag.base | wialon.item.Resource.dataFlag.reports;
-    var unit_flags = wialon.item.Item.dataFlag.base;
-
-    // reportTempID = 39 Eco Drv per Veh, 33 over speeding per truck
-    // 
-    
-    sess.updateDataFlags( // load items to current session
+	var unit_flags = wialon.item.Item.dataFlag.base;
+	
+	var sess = wialon.core.Session.getInstance(); // get instance of current Session
+	sess.loadLibrary("resourceReports"); // load Reports Library
+	sess.updateDataFlags( // load items to current session
 		[{type: "type", data: "avl_resource", flags:res_flags , mode: 0}, 
-		 {type: "type", data: "avl_unit", flags: unit_flags, mode: 0}], // 'avl_unit's specification
-		function (code) { // updateDataFlags callback
-            if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
-            
-            var ress = sess.getItems("avl_resource"); // get loaded 'avl_resource's items
-            if (!ress || !ress.length){ console.log("Resources not found"); return; } // check if resources found
+		 {type: "type", data: "avl_unit", flags: unit_flags, mode: 0}], 
+		function (code) { 
+			if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } 
+
+            var ress = sess.getItems("avl_resource");
+            var ugs = sess.getItems("avl_unit_group");
+			if (!ress || !ress.length){ console.log("No Resources found"); return; } 
             
             var res = ress[0];
+            console.log("all unit groups");
+            console.log(ugs);
+            console.log("all resources");
+            console.log(ress);
+            var template = res.getReport(48);
+            
+            var to_t = sess.getServerTime(); 
+            var from_t = to_t - parseInt(2592000, 10); //month interval
+            var interval = { "from": from_t, "to": to_t, "flags": wialon.item.MReport.intervalFlag.absolute };
 
-            console.log("res here");
-            console.log(res);
-            var id_ec_rtmp = 39;
-            var id_os_rtmp = 33;
-
-            var to = sess.getServerTime();
-            var from = to - parseInt(2592000, 10);
-
-            var interval = { "from": from, "to": to, "flags": wialon.item.MReport.intervalFlag.absolute };
-
-            var template = res.getReport(id_ec_rtmp); // get report template by id
-
-		
-			var units = sess.getItems("avl_unit"); // get loaded 'avl_units's items
-			if (!units || !units.length){ console.log("Units not found"); return; } // check if units found
-			for (var i = 0; i< units.length; i++) {
-                unit = units[i];
-                unit_id = unit.getId();
-                res.execReport(template, unit_id, 0, interval, // execute selected report
-                    function(code, data) { // execReport template
-                        console.log("data=========");
-                        console.log(data);
-                        console.log("code");
-                        console.log(code);
-                        if(code){ console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
-                        if(!data.getTables().length){ // exit if no tables obtained
-                            console.log("There is no data generated"); return; }
-                        // else showReportResult(data); // show report result
-                        else showRptResult(data);
-                });
-            }
+			// var units = sess.getItems("avl_unit"); 
+			// if (!units || !units.length){ console.log("Units not found"); return; } 
+			// for (var i = 0; i< units.length; i++){
+            //     var unit = units[i];
+            //     var u_id = unit.getId();
+            //     res.execReport(template, u_id, 0, interval, 
+            //         function(code, data) {
+            //             if(code){ console.log(wialon.core.Errors.getErrorText(code)); return; }
+            //             if(data.getTables().length & data.getTables().length > 1){ // exit if no tables obtained
+            //                 console.log("report data here");
+            //                 console.log(data);
+            //             }
+            //     });
+            //     clearReportResult();
+            // }
 		}
 	);
+
+   
 };
 
 var vlrReport = function(){
