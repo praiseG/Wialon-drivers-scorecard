@@ -1,5 +1,6 @@
 /// Global event handlers
 var callbacks = {};
+var MEASURE = null;
 
 var getTransporterFromUnitName = function(unit_name){
     if(!unit_name) return;
@@ -166,7 +167,13 @@ function login(code){
       alert("Login Error");
       return;
     }
-    var username = wialon.core.Session.getInstance().getCurrUser().getName();
+
+    wialon.core.Remote.getInstance().startBatch("initBatch");
+    var user = wialon.core.Session.getInstance().getCurrUser();
+    
+    MEASURE = user.getMeasureUnits();
+
+    var username = user.getName();
     document.getElementById("username").innerHTML = username;
     
     window.onbeforeunload = function () {
@@ -377,9 +384,6 @@ var fetchDrivers = function(){
     });
 };
 
-var getDriverScoreFactors1 = function(){
-    console.log("loading");
-};
 
 function getTableValue(data) { // calculate ceil value
 	if (typeof data == "object")
@@ -421,6 +425,7 @@ var showRptResult = function(result){ // show result after report execute
 		);
 	}
 }
+
 var getDriverScoreFactors = function(){
     var sess = wialon.core.Session.getInstance(); // get instance of current Session
 
@@ -476,81 +481,6 @@ var getDriverScoreFactors = function(){
             }
 		}
 	);
-};
-
-
-var getDriverScoreFactors2 = function(){
-    var sess = wialon.core.Session.getInstance(); // get instance of current Session
-
-    sess.loadLibrary("resourceDrivers");
-    sess.loadLibrary("resourceDriverUnits");// load Icon Library	
-    sess.loadLibrary("itemCustomFields"); //IMPORTANT! for loading custom fields needed loaded library "itemCustomFields"
-    // flags to specify what kind of data should be returned
-
-    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base, wialon.item.Resource.dataFlag.drivers, wialon.item.Resource.dataFlag.driverUnits, wialon.item.Item.dataFlag.customFields);
-
-    sess.updateDataFlags( // load items to current session
-        [{type: "type", data: "avl_resource", flags: flags, mode: 0}], // Items specification
-        function (code) { // updateDataFlags callback
-            if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
-            // get loaded 'avl_unit's items  
-            var ress = sess.getItems("avl_resource");
-            console.log("***************resources**********");
-            console.log(ress);
-            console.log("***************resources**********");
-            if (!ress || !ress.length){ console.log("No Resources found"); return; } // check if resources were found
-            var dt = $("#dlr-tbl").dataTable().api();
-            for (var i = 0; i< ress.length; i++){ 
-                var d_res = ress[i];
-                var d_res_name = d_res.getName();
-                var drivers = _.values(d_res.getDrivers());
-                console.log("res: " + d_res_name);
-
-                if(_.size(drivers) > 0){
-                    for (var j = 0; j< drivers.length; j++){ 
-                        var dr = drivers[j];
-                        var d_name = dr.n;
-                        d_id = dr.id;
-                        console.log("--------dr-------------------");
-                        console.log(dr);
-                        console.log("drier Units");
-                        console.log(d_res.getDriverUnits(d_id));
-                        console.log(" Units after");
-                        var d_site_name = "unknown";
-                        var d_site_id = "unknown";
-                        var d_license = "unknown";
-                        var d_license_expiry = "unknown";
-                        // var cusFields = _.values(dr.getCustomFields());
-                        // if(_.size(cusFields) > 0){
-                        //     _.each(cusFields,function(cField, index, list){
-                        //         if(cField.n = "Site Name") d_site_name = cField.v;
-                        //         else if(cField.n = "Site ID") d_site_id = cField.v;
-                        //         else if(cField.n = "License ID") d_license = cField.v;
-                        //         else if(cField.n = "License Expiry") d_license_expiry = cField.v;
-                        //     });
-                        // }
-                        
-                        var driver = {
-                            "id": j+1,
-                            // "icon_url": d.getDriverImageUr(32),
-                            "icon_url": null,
-                            "transporter_id": d_res_name, 
-                            "name": d_name, 
-                            "driver_id": dr.id, 
-                            "driver_license": d_license, 
-                            "site_name": d_site_name, 
-                            "site_id": d_site_id,
-                            "license_expiry": d_license_expiry
-                            };
-                        // console.log("driver one");
-                        // console.log(driver);
-                        var dlrTemp = _.template($("#dlr-data").html());
-                        dt.row.add($(dlrTemp({"drv": driver}))); 
-                    }
-                }
-            }   
-            dt.row(0).remove().draw();         
-    });
 };
 
 var vlrReport = function(){
