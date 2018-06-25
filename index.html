@@ -21,6 +21,7 @@
     
    
     <!-- <script src="./js/jquery/jquery-3.3.1.slim.min.js"></script> -->
+    <!-- <script type="text/javascript" src="https://hst-api.wialon.com/wsdk/script/wialon.js"></script>  -->
     <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
     <!-- <script type="text/javascript" src="https//code.jquery.com/jquery-1.12.4.js"></script> -->
     <script src="./js/bootstrap/bootstrap.min.js"></script>
@@ -56,17 +57,17 @@
     </nav>
     <div class="container">
         <div class="row dashboard-bg row-resized" id="units">
-            <p class="report-heading" id="reportTitle">Drivers Score Card</p>
+            <p class="report-heading" id="reportTitle"></p>
         </div> 
         <div class="row row-3d">
             <div class="float-left">
                 <select class="custom-select" id="rTemplates">
                     <option class="select-option" selected>Select Report Template</option>
-                    <option class="select-option" value="Drivers Score Card" id="t-dsc">Drivers Score Card</option>
-                    <option class="select-option"  value="Drivers List Report" id="t-dlr">Drivers List Report</option>
-                    <option class="select-option" value="Vehicles List Report" id="t-vlr">Vehicles List Report</option>
-                    <option class="select-option" value="Trips Details Report" id="t-tdr">Trips Details Report</option>
-                    <option class="select-option" value="Events Details Report" id="t-edr">Events Details Report</option>
+                    <option class="select-option" value="Drivers_Score_Card" id="t-dsc">Drivers Score Card</option>
+                    <option class="select-option"  value="Drivers_List_Report" id="t-dlr">Drivers List Report</option>
+                    <option class="select-option" value="Vehicles_List_Report" id="t-vlr">Vehicles List Report</option>
+                    <option class="select-option" value="Trips_Details_Report" id="t-tdr">Trips Details Report</option>
+                    <option class="select-option" value="Events_Details_Report" id="t-edr">Events Details Report</option>
                     <option class="select-option" value="Cycle Time Report" id="t-ctr">Cycle Time Report</option>
                 </select>
             </div>
@@ -101,7 +102,8 @@
         <div id="rpt-table">
                
         </div>
-        <div id="reprt-data"></div>
+        <div id="reprt-data-sc"></div>
+         <div id="reprt-data"></div>
     </div>
     <!-- TEMPLATES -->
     <!-- Vehicles List Report -->
@@ -254,6 +256,26 @@
                 </tr>             
             </tbody>
         </table>
+    </script>
+    <script type="text/template" id="dsc-data">
+        <tr>
+            <td><%= dsc.id %></td>
+            <td><%= dsc.transporter_id %></td>
+            <td><%= dsc.drv_name %></td>
+            <td><%= dsc.drv_lic %></td>
+            <td><%= dsc.tot_mileage %></td>
+            <td><%= dsc.site_name %></td>
+            <td><%= dsc.hbrk_penalty %></td>
+            <td><%= dsc.hbrk_occur %></td>
+            <td><%= dsc.hacc_penalty %></td>
+            <td><%= dsc.hacc_occur %></td>
+            <td><%= dsc.ovs_penlty %></td>
+            <td><%= dsc.ovs_duration %></td>
+            <td><%= dsc.drvtime_penalty %></td>
+            <td><%= dsc.drvtime_mins %></td>
+            <td><%= dsc.resting_penalty %></td>
+            <td <% if(dsc.s_color){ %>bgcolor=<%= dsc.s_color %><% } %>><%= dsc.score %></td>
+        </tr>   
     </script>
   </body>
 </html>
