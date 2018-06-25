@@ -6,6 +6,8 @@ var timeToSeconds = function(hms_time){
     return seconds;
 
 }
+
+
 var getTransporterFromUnitName = function(unit_name){
     if(!unit_name) return;
     start = unit_name.indexOf("(");
@@ -108,7 +110,13 @@ var getPreviousDate =  function(target){
     console.log(target);
 };
 
-var getTimefromInput = function(){};
+var getTimeIntervalFromInput = function(){
+    var interval = [];
+    t_from = $("#fromDate").val();
+    t_to = $("#toDate").val();
+    if(!t_from || !t_to) return null;
+    return interval[t_from, t_to];
+};
 
 // wialon functions
 /// IE check
@@ -203,127 +211,7 @@ function login(code){
     }
   }
 
-var executeReport = function(unit) {
-    console.log("inside execReport");
-    var sess = wialon.core.Session.getInstance();
-    var res_id = sess.getCurrUser().getAccountId();
-    var unit_id = unit.u_id;
-    res_id = 15452548;
-    unit_id = 14092777;
-    console.log("res_id: " + res_id);
-    console.log("unit_id : " + unit_id);
-    var t_to = sess.getServerTime();
-    var t_from = t_to - parseInt(604800, 10);
-    t_from = 1521849600;
-    t_to = 1529884740;
-    console.log("t_to :" + t_to);
-    console.log("t_from :" + t_from);
 
-    var t_penalty = 0;
-    var t_score  = 0;
-    var d_name = "unknown";
-    var d_lic = "unknown";
-    var d_site_name = "unknown";
-    var ovs_c = 0;
-    var ovs_p = 0;
-    var hacc_c = 0;
-    var hacc_p = 0;
-    var hbrk_c = 0;
-    var hbrk_p = 0;
-    var drt_m = 0;
-    var drvt_p = 0;
-    var rst_p = 0;
-    
-    
-	// General batch
-	var params = [
-    {"svc": 'report/exec_report', "params":{"reportResourceId": res_id,"reportTemplateId": 48,"reportObjectId": unit_id,"reportObjectSecId":0,"interval": {"flags": 0,"from": t_from,"to": t_to}}},
-    {"svc": "report/select_result_rows","params": {"tableIndex": 0,"config": {"type": 'range',"data": {"from": 0,"to": 0xFFFF,"level": 1,"rawValues": 1}}}}, 
-	{"svc": "report/select_result_rows","params": {"tableIndex": 1,"config": {"type": 'range',"data": {"from": 0,"to": 0xFFFF,"level": 1,"rawValues": 1}}}},
-    {"svc": "report/cleanup_result","params": {}}];
-    
-    var params2 = [
-        {"svc": "report/exec_report", "params": {"reportResourceId": 15452548,"reportTemplateId": 48,"reportObjectId": 14092777,"reportObjectSecId":0,"interval": {"flags": 0,"from": 1521849600,"to": 1529884740}}},
-        {"svc": "report/get_result_rows", "params": {"tableIndex":0,"indexFrom":0,"indexTo":3}},
-        {"svc": "report/get_result_rows", "params": {"tableIndex":1,"indexFrom":0,"indexTo":3}},
-        {"svc": 'report/cleanup_result','params': {}}];
-
-	wialon.core.Remote.getInstance().remoteCall('core/batch', params, function (code, obj) {
-        console.log("obj outside");
-        console.log(code);
-        console.log(obj);
-        console.log("obj out end");
-		// if (code === 0 && obj && obj.length && obj.length == 4 && !('error' in obj[0]) && ('reportResult' in obj[0])) {
-
-        if (code === 0 && obj && obj.length && !('error' in obj[0]) && ('reportResult' in obj[0]) && obj[0].reportResult.tables.length > 0) {
-            console.log("report successful see obj below");
-            console.log(obj);
-            if(!('error' in obj[1])){ // process Eco Driving parameters 
-                eco_rows = obj[1];
-                console.log("eco driving params");
-                for (var r=0; r < eco_rows.length; r++){
-                    var violation = eco_rows[r].c[0].t;
-                    console.log(violation);
-                    if(violation == "Harsh Acceleration"){
-                        hacc_c = eco_rows[r].c[2].t;
-                        hacc_p = eco_rows[r].c[1].t;
-                        t_penalty += hacc_p;
-                    }else if(violation == "Harsh Braking"){
-                        hbrk_c = eco_rows[r].c[2].t;
-                        hbrk_p = eco_rows[r].c[1].t;
-                        t_penalty += hbrk_p;
-                    }
-
-                }
-            }
-
-            if(!('error' in obj[2])){ // process Over Speeding parameters 
-                ovs_rows = obj[2];
-                console.log("over speeding durations");
-                for (var v=0; v < ovs_rows.length; v++){
-                    t_sec = timeToSeconds(ovs_rows[v].c[1].t);
-                    console.log(t_sec);
-                    ovs_c++;
-                    ovs_p += parseInt(t_sec/60);
-                    t_penalty += ovs_p;
-                }
-            }
-
-            t_score = (t_penalty/unit.mileage)*100;
-
-            console.log("ovs count :" + ovs_c);
-            console.log("ovs pnalty :" + ovs_p);
-            console.log("hacc count :" + hacc_c);
-            console.log("hacc pnalty :" + hacc_p);
-            console.log("hbrk count :" + hbrk_c);
-            console.log("hbrk pnalty :" + hbrk_p);
-            console.log("total pnalty :" + t_penalty);
-
-            var dsc = {
-                "id": unit.row_id+1,
-                "transporter_id":unit.tp_id,
-                "drv_name": d_name,
-                "drv_lic": d_lic,
-                "tot_mileage": unit.mileage,
-                "site_name":d_site_name,
-                "hbrk_penalty": hbrk_p,
-                "hbrk_occur": hbrk_c,
-                "hacc_penalty": hacc_p,
-                "hacc_occur": hacc_c,
-                "ovs_penlty": ovs_p,
-                "ovs_duration": ovs_c,
-                "drvtime_penalty": drvt_p,
-                "drvtime_mins": drt_m,
-                "resting_penalty": rst_p,
-                "score": t_score
-            }
-            var dscTemp = _.template($("#dsc-data").html());
-            dt.row.add($(dscTemp({"dsc": dsc})));
-            if(unit.row_id == 0) dt.row(0).remove();
-            dt.draw();
-		}
-	});
-};
 
 var clearReportResult = function() {
     console.log("inside clear report  result");
@@ -363,11 +251,11 @@ var fetchUnits = function(){
         console.log("units hereee orig");
         console.log(units);
         var dt = $("#vlr-tbl").dataTable().api();
-        for (var i = 0; i< units.length; i++){
+        for (var i = 0, p = 0; i< units.length; i++, p++){
         var u = units[i];
         var u_name = u.getName();
         // devType = u.getDeviceTypeId();
-        if(u_name.endsWith("(Cam)")) continue;
+        if(u_name.endsWith("(Cam)")) { p--; continue;}
         // console.log(u);
         if(u.getTripsHistory()){
             console.log("trips history here");
@@ -376,9 +264,12 @@ var fetchUnits = function(){
         }
         if(u.getCurrentTrip()){
             console.log("trips here");
-            console.log(u.getCurrUser());
+            console.log(u.getCurrentTrip());
             console.log("trips here");
         }
+
+        // console.log("driver activity");
+        // console.log(u.getDriverActivitySettings());
         // console.log(u.getAdminFields());
         var u_site_name = "unknown";
         var u_site_id = "unknown";
@@ -387,8 +278,8 @@ var fetchUnits = function(){
         var u_model ="unknown";
         var u_vhl_vin = "unknown";
         var  cusFields = _.values(u.getCustomFields());
-        console.log("custom fields");
-        console.log(cusFields);
+        // console.log("custom fields");
+        // console.log(cusFields);
         if(_.size(cusFields) > 0){
             _.each(cusFields,function(cField, index, list){
             if(cField.n == "Site Name") u_site_name = cField.v;
@@ -422,17 +313,15 @@ var fetchUnits = function(){
         var tp_id = u_dets["transporter"];
         var u_lic = u_dets["unit_license"];
         var unit = {
-            "id": i+1,
+            "id": p+1,
             "icon_url": u.getIconUrl(32),
             "transporter_id": tp_id, 
             "license_number": u_lic, 
             "vin": u_vhl_vin, 
             "year_mke_model": u_year + "/" + u_make + "/" + u_model, 
             "site_name": u_site_name, 
-            // "site_id": u.getId(),
             "site_id": u_site_id,
             "ivms_id": u.getUniqueId(),
-        //   "ivms_id": u.getDeviceTypeId(),
             "last_gps_conn": u_time,
             "last_trip_dt": u_time
         };
@@ -440,9 +329,6 @@ var fetchUnits = function(){
         dt.row.add($(vhlTemp({"vhl": unit})));
         }
          dt.row(0).remove().draw();
-        //  dt.draw();  
-        //  var vhlTemp = _.template($("#vlr-data").html());
-        //  $("#vlr-tbl").children("tbody").html(vhlTemp({"vehicles": all_units}));  
       }
    );
 };
@@ -540,6 +426,230 @@ function getTableValue(data) { // calculate ceil value
 		if (typeof data.t == "string") return data.t; else return "";
 	else return data;
 }
+
+var executeReport = function(unit) {
+    console.log("inside execReport");
+    var sess = wialon.core.Session.getInstance();
+    var res_id = sess.getCurrUser().getAccountId();
+    var unit_id = unit.u_id;
+    res_id = 15452548;
+    // unit_id = 14092777;
+    console.log("res_id: " + res_id);
+    console.log("unit_id : " + unit_id);
+    var t_to = sess.getServerTime();
+    var t_from = t_to - parseInt(604800, 10);
+    t_from = 1521849600;
+    t_to = 1529884740;
+    console.log("t_to :" + t_to);
+    console.log("t_from :" + t_from);
+    var dt = unit.dt;
+
+    var t_penalty = 0;
+    var t_score  = 0;
+    var d_name = "unknown";
+    var d_lic = "unknown";
+    var d_site_name = "unknown";
+    var ovs_c = 0;
+    var ovs_p = 0;
+    var hacc_c = 0;
+    var hacc_p = 0;
+    var hbrk_c = 0;
+    var hbrk_p = 0;
+    var drt_m = 0;
+    var drvt_p = 0;
+    var rst_p = 0;
+    var s_color = null;
+    
+	// General batch
+	var params = [
+    {"svc": 'report/exec_report', "params":{"reportResourceId": res_id,"reportTemplateId": 48,"reportObjectId": unit_id,"reportObjectSecId":0,"interval": {"flags": 0,"from": t_from,"to": t_to}}},
+    {"svc": "report/select_result_rows","params": {"tableIndex": 0,"config": {"type": 'range',"data": {"from": 0,"to": 0xFFFF,"level": 1,"rawValues": 1}}}}, 
+	{"svc": "report/select_result_rows","params": {"tableIndex": 1,"config": {"type": 'range',"data": {"from": 0,"to": 0xFFFF,"level": 1,"rawValues": 1}}}},
+    {"svc": "report/cleanup_result","params": {}}];
+    
+    // var params2 = [
+    //     {"svc": "report/exec_report", "params": {"reportResourceId": 15452548,"reportTemplateId": 48,"reportObjectId": 14092777,"reportObjectSecId":0,"interval": {"flags": 0,"from": 1521849600,"to": 1529884740}}},
+    //     {"svc": "report/get_result_rows", "params": {"tableIndex":0,"indexFrom":0,"indexTo":3}},
+    //     {"svc": "report/get_result_rows", "params": {"tableIndex":1,"indexFrom":0,"indexTo":3}},
+    //     {"svc": 'report/cleanup_result','params': {}}];
+
+	wialon.core.Remote.getInstance().remoteCall('core/batch', params, function (code, obj) {
+        console.log("obj outside");
+        console.log(code);
+        console.log(obj);
+        console.log("obj out end");
+
+
+        if (code === 0 && obj && obj.length && !('error' in obj[0]) && ('reportResult' in obj[0]) && obj[0].reportResult.tables.length > 0) {
+            console.log("report successful see obj below");
+            console.log(obj);
+            if(!('error' in obj[1])){ // process Eco Driving parameters 
+                eco_rows = obj[1];
+                console.log("eco driving params");
+                for (var r=0; r < eco_rows.length; r++){
+                    var violation = eco_rows[r].c[0].t;
+                    console.log(violation);
+                    if(violation == "Harsh Acceleration"){
+                        hacc_c = eco_rows[r].c[2].t;
+                        hacc_p = eco_rows[r].c[1].t;
+                        t_penalty += parseInt(hacc_p);
+                    }else if(violation == "Harsh Braking"){
+                        hbrk_c = eco_rows[r].c[2].t;
+                        hbrk_p = eco_rows[r].c[1].t;
+                        t_penalty += parseInt(hbrk_p);
+                    }
+                }
+            }
+
+            if(!('error' in obj[2])){ // process Over Speeding parameters 
+                ovs_rows = obj[2];
+                console.log("over speeding durations");
+                for (var v=0; v < ovs_rows.length; v++){
+                    t_sec = timeToSeconds(ovs_rows[v].c[1].t);
+                    console.log(t_sec);
+                    ovs_c++;
+                    ovs_p += parseInt(t_sec/60);
+                    t_penalty += ovs_p;
+                }
+            }
+
+            t_score = Math.round((t_penalty/unit.mileage)*100);
+            if(0 <= t_score <= 2 ) s_color="green";
+            else if(2 < t_score <= 5 ) s_color="yellow";
+            else if(t_score > 5) s_color="red";
+            
+
+            console.log("ovs count :" + ovs_c);
+            console.log("ovs pnalty :" + ovs_p);
+            console.log("hacc count :" + hacc_c);
+            console.log("hacc pnalty :" + hacc_p);
+            console.log("hbrk count :" + hbrk_c);
+            console.log("hbrk pnalty :" + hbrk_p);
+            console.log("total pnalty :" + t_penalty);
+            console.log("ovs count :" + ovs_c);
+            console.log("ovs pnalty :" + ovs_p);
+            console.log("hacc count :" + hacc_c);
+            console.log("hacc pnalty :" + hacc_p);
+            console.log("hbrk count :" + hbrk_c);
+            console.log("hbrk pnalty :" + hbrk_p);
+            console.log("total pnalty :" + t_penalty);
+
+            var dsc = {
+                "id": unit.row_id+1,
+                "transporter_id":unit.tp_id,
+                "drv_name": unit.u_lic,
+                "drv_lic": d_lic,
+                "tot_mileage": unit.mileage.toLocaleString('en'),
+                "site_name":d_site_name,
+                "hbrk_penalty": hbrk_p,
+                "hbrk_occur": hbrk_c,
+                "hacc_penalty": hacc_p,
+                "hacc_occur": hacc_c,
+                "ovs_penlty": ovs_p,
+                "ovs_duration": ovs_c,
+                "drvtime_penalty": drvt_p,
+                "drvtime_mins": drt_m,
+                "resting_penalty": rst_p,
+                "score": t_score
+            }
+            var dscTemp = _.template($("#dsc-data").html());
+            dt.row.add($(dscTemp({"dsc": dsc})));
+            if(unit.row_id == 1) dt.row(0).remove();
+            dt.draw();
+		}
+	});
+};
+
+var getDriverScoreFactorsRecursie = function(){
+    console.log("in Driver Score Card");
+    var sess = wialon.core.Session.getInstance(); 
+
+    sess.loadLibrary("itemIcon");
+    sess.loadLibrary("itemCustomFields");
+    sess.loadLibrary("itemProfileFields");
+    sess.loadLibrary("unitDriveRankSettings");
+    sess.loadLibrary("unitEvents");
+    sess.loadLibrary("unitTripDetector");
+
+    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields, wialon.item.Item.dataFlag.customProps, wialon.item.Item.dataFlag.guid, 256, 8388608, 131072, 524288, 8192);
+
+    sess.updateDataFlags( 
+    [{type: "type", data: "avl_unit", flags: flags, mode: 0}], 
+    function (code) { 
+        console.log("code in updateflags " + code);
+        if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } 
+        var units = sess.getItems("avl_unit");
+        units = wialon.util.Helper.filterItems(units, wialon.item.Item.accessFlag.execReports);
+        if (!units || !units.length){ console.log("Units not found"); return; } 
+        console.log(units);
+        var dt = $("#dsc-tbl").dataTable().api();
+        var res_id = sess.getCurrUser().getAccountId();
+        res_id = 15452548;
+        // for (var i = 0, p = 0; i< units.length; i++, p++){ 
+        //     var u = units[i]; 
+        //     var u_name = u.getName();
+        //     console.log("unit =========================" + u_name);
+        //     if(u_name.endsWith("(Cam)")) { p--; continue;}
+        //     var u_dets = getTransporterFromUnitName(u_name);
+        //     var tp_id = u_dets["transporter"];
+        //     var u_lic = u_dets["unit_license"];
+        //     var u_mileage = u.getMileageCounter();
+
+        //     var unit_id = u.getId();
+        //     // console.log("res_id: " + res_id);
+        //     console.log("unit_id : " + unit_id);
+            
+        //     var unit = {
+        //         "row_id": p,
+        //         "tp_id": tp_id,
+        //         "mileage": u_mileage,
+        //         "u_name": u_name,
+        //         "u_id": unit_id,
+        //         "dt": dt,
+        //         "u_lic": u_lic
+        //     };
+        //     console.log("executing Report");
+        //     executeReport(unit);    
+        // }
+
+        // var calculateScores = function (n,p=0){
+        //     console.log("inside ca scores");
+        //     if(n < units.length){
+        //         var u = units[n]; 
+        //         var u_name = u.getName();
+        //         console.log("unit =========================" + u_name);
+        //         if(u_name.endsWith("(Cam)")){ 
+        //             p--;
+        //         }else{
+        //             var u_dets = getTransporterFromUnitName(u_name);
+        //             var tp_id = u_dets["transporter"];
+        //             var u_lic = u_dets["unit_license"];
+        //             var u_mileage = u.getMileageCounter();
+
+        //             var unit_id = u.getId();
+        //             // console.log("res_id: " + res_id);
+        //             console.log("unit_id : " + unit_id);
+                    
+        //             var unit = {
+        //                 "row_id": p,
+        //                 "tp_id": tp_id,
+        //                 "mileage": u_mileage,
+        //                 "u_name": u_name,
+        //                 "u_id": unit_id,
+        //                 "dt": dt,
+        //                 "u_lic": u_lic
+        //             };
+        //             console.log("executing Report");
+        //             executeReport(unit); 
+        //             p++;
+        //         }
+        //         calculateScores(n+1);
+        //     }
+        // };
+
+        // calculateScores(0);
+    });
+};
 
 var getDriverScoreFactors2 = function(){
     console.log("drivers score card here");
@@ -708,23 +818,19 @@ var getDriverScoreFactors3 = function(){
 	});   
 };
 
-//Fetch all Units
-var getDriverScoreFactors = function(){
+var getDriverScoreFactorsWhole = function(){
     console.log("in Driver Score Card");
-    var sess = wialon.core.Session.getInstance(); // get instance of current Session
+    var sess = wialon.core.Session.getInstance(); 
 
-    sess.loadLibrary("itemIcon"); // load Icon Library	
-    sess.loadLibrary("itemCustomFields"); //IMPORTANT! for loading custom fields needed loaded library "itemCustomFields"
-    sess.loadLibrary("itemProfileFields"); //IMPORTANT! for loading custom fields needed loaded library "itemProfileFields"
+    sess.loadLibrary("itemIcon");
+    sess.loadLibrary("itemCustomFields");
+    sess.loadLibrary("itemProfileFields");
     sess.loadLibrary("unitDriveRankSettings");
     sess.loadLibrary("unitEvents");
     sess.loadLibrary("unitTripDetector");
 
-    // var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields, wialon.item.Item.dataFlag.customProps, wialon.item.Item.dataFlag.guid, 256, 8388608, 131072, 524288, 8192);
-
     var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields, wialon.item.Item.dataFlag.customProps, wialon.item.Item.dataFlag.guid, 256, 8388608, 131072, 524288, 8192);
 
-  
     sess.updateDataFlags( 
     [{type: "type", data: "avl_unit", flags: flags, mode: 0}], 
     function (code) { 
@@ -735,12 +841,17 @@ var getDriverScoreFactors = function(){
         if (!units || !units.length){ console.log("Units not found"); return; } 
         console.log(units);
         var dt = $("#dsc-tbl").dataTable().api();
-        // for (var i = 0; i< units.length; i++){ 
-        //     var u = units[i]; 
-            var u = units[2]; 
+        var res_id = sess.getCurrUser().getAccountId();
+        res_id = 15452548;
+        for (var i = 0, p = 0; i< units.length; i++, p++){ 
+            var u = units[i]; 
+            // var u = units[2]; 
             var u_name = u.getName();
+            console.log("unit =========================" + u_name);
+            if(u_name.endsWith("(Cam)")) { p--; continue;}
             var u_dets = getTransporterFromUnitName(u_name);
             var tp_id = u_dets["transporter"];
+            var u_lic = u_dets["unit_license"];
             var u_mileage = u.getMileageCounter();
             // var unit = {
             //     "row_id": 0,
@@ -751,11 +862,9 @@ var getDriverScoreFactors = function(){
             // };
             // console.log("executing Report");
             // executeReport(unit);
-            var res_id = sess.getCurrUser().getAccountId();
+            
             var unit_id = u.getId();
-            res_id = 15452548;
-            unit_id = 14092777;
-            console.log("res_id: " + res_id);
+            // console.log("res_id: " + res_id);
             console.log("unit_id : " + unit_id);
             var t_to = sess.getServerTime();
             var t_from = t_to - parseInt(604800, 10);
@@ -763,7 +872,6 @@ var getDriverScoreFactors = function(){
             t_to = 1529884740;
             console.log("t_to :" + t_to);
             console.log("t_from :" + t_from);
-            var row_id = 0;
 
             var t_penalty = 0;
             var t_score  = 0;
@@ -790,11 +898,6 @@ var getDriverScoreFactors = function(){
 
             //execute and process report
             wialon.core.Remote.getInstance().remoteCall('core/batch', params, function (code, obj) {
-                console.log("obj outside");
-                console.log(code);
-                console.log(obj);
-                console.log("obj out end");
-                // if (code === 0 && obj && obj.length && obj.length == 4 && !('error' in obj[0]) && ('reportResult' in obj[0])) {
         
                 if (code === 0 && obj && obj.length && !('error' in obj[0]) && ('reportResult' in obj[0]) && obj[0].reportResult.tables.length > 0) {
                     console.log("report successful see obj below");
@@ -845,10 +948,10 @@ var getDriverScoreFactors = function(){
                     console.log("total pnalty :" + t_penalty);
         
                     var dsc = {
-                        "id": row_id+1,
+                        "id": p+1,
                         "s_color": s_color,
                         "transporter_id":tp_id,
-                        "drv_name": d_name,
+                        "drv_name": u_lic,
                         "drv_lic": d_lic,
                         "tot_mileage": u_mileage.toLocaleString('en') ,
                         "site_name":d_site_name,
@@ -864,18 +967,189 @@ var getDriverScoreFactors = function(){
                         "score": t_score
                     }
                     var dscTemp = _.template($("#dsc-data").html());
-                    console.log("template here");
-                    console.log(dscTemp);
                     dt.row.add($(dscTemp({"dsc": dsc})));
-                    if(row_id == 0) dt.row(0).remove();
+                    if(i==0) dt.row(0).remove();
                     dt.draw();
                 }
             });
-
-        // end for loop for units}
+        }
     });
 };
 
+var getDriverScoreFactors = function(){
+    console.log("in Driver Score Card");
+    var sess = wialon.core.Session.getInstance(); 
+
+    sess.loadLibrary("itemIcon");
+    sess.loadLibrary("itemCustomFields");
+    sess.loadLibrary("itemProfileFields");
+    sess.loadLibrary("unitDriveRankSettings");
+    sess.loadLibrary("unitEvents");
+    sess.loadLibrary("unitTripDetector");
+
+    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields, wialon.item.Item.dataFlag.customProps, wialon.item.Item.dataFlag.guid, 256, 8388608, 131072, 524288, 8192);
+
+    sess.updateDataFlags( 
+    [{type: "type", data: "avl_unit", flags: flags, mode: 0}], 
+        function (code) { 
+        console.log("codefu " + code);
+        if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } 
+        var units = sess.getItems("avl_unit");
+        units = wialon.util.Helper.filterItems(units, wialon.item.Item.accessFlag.execReports);
+        if (!units || !units.length){ console.log("Units not found"); return; } 
+        console.log(units);
+        var dt = $("#dsc-tbl").dataTable().api();
+        var res_id = sess.getCurrUser().getAccountId();
+        res_id = 15452548;
+        // for (var i = 0, p = 0; i< units.length; i++){ 
+        //     (function(i){
+        var calculateScores = function(i){
+            console.log("inside ca scores");
+            if(i < units.length){
+                var u = units[i]; 
+                // var u = units[2]; 
+                var u_name = u.getName();
+                console.log("unit =========================" + u_name);
+                if(!(u_name.endsWith("(Cam)"))){ 
+                    var u_dets = getTransporterFromUnitName(u_name);
+                    var tp_id = u_dets["transporter"];
+                    var u_lic = u_dets["unit_license"];
+                    var u_mileage = u.getMileageCounter();
+                    // var unit = {
+                    //     "row_id": 0,
+                    //     "tp_id": tp_id,
+                    //     "mileage": u_mileage,
+                    //     "u_name": u_name,
+                    //     "u_id": u.getId()
+                    // };
+                    // console.log("executing Report");
+                    // executeReport(unit);
+                    
+                    var unit_id = u.getId();
+                    // console.log("res_id: " + res_id);
+                    console.log("unit_id : " + unit_id);
+                    var t_to = sess.getServerTime();
+                    var t_from = t_to - parseInt(604800, 10);
+                    t_from = 1521849600;
+                    t_to = 1529884740;
+                    console.log("t_to :" + t_to);
+                    console.log("t_from :" + t_from);
+
+                    var t_penalty = 0;
+                    var t_score  = 0;
+                    var d_name = "unknown";
+                    var d_lic = "unknown";
+                    var d_site_name = "unknown";
+                    var ovs_c = 0;
+                    var ovs_p = 0;
+                    var hacc_c = 0;
+                    var hacc_p = 0;
+                    var hbrk_c = 0;
+                    var hbrk_p = 0;
+                    var drt_m = 0;
+                    var drvt_p = 0;
+                    var rst_p = 0;
+                    var s_color = null;
+                    
+                    // General batch params
+                    var params = [
+                    {"svc": 'report/exec_report', "params":{"reportResourceId": res_id,"reportTemplateId": 48,"reportObjectId": unit_id,"reportObjectSecId":0,"interval": {"flags": 0,"from": t_from,"to": t_to}}},
+                    {"svc": "report/select_result_rows","params": {"tableIndex": 0,"config": {"type": 'range',"data": {"from": 0,"to": 0xFFFF,"level": 1,"rawValues": 1}}}}, 
+                    {"svc": "report/select_result_rows","params": {"tableIndex": 1,"config": {"type": 'range',"data": {"from": 0,"to": 0xFFFF,"level": 1,"rawValues": 1}}}},
+                    {"svc": "report/cleanup_result","params": {}}];
+
+                    //execute and process report
+                    wialon.core.Remote.getInstance().remoteCall('core/batch', params, function (code, obj) {
+                        console.log("closure id*******" + i);
+                        console.log("code remote: " + code);
+                        console.log(obj);
+                        if (code === 0 && obj && obj.length && !('error' in obj[0]) && ('reportResult' in obj[0]) && obj[0].reportResult.tables.length > 0) {
+                            console.log("report successful see obj below");
+                            console.log(obj); // process these results well
+                            if(!('error' in obj[1])){ // process Eco Driving parameters 
+                                eco_rows = obj[1];
+                                // console.log("eco driving params");
+                                for (var r=0; r < eco_rows.length; r++){
+                                    var violation = eco_rows[r].c[0].t;
+                                    // console.log(violation);
+                                    if(violation == "Harsh Acceleration"){
+                                        hacc_c = eco_rows[r].c[2].t;
+                                        hacc_p = eco_rows[r].c[1].t;
+                                        t_penalty += parseInt(hacc_p);
+                                    }else if(violation == "Harsh Braking"){
+                                        hbrk_c = eco_rows[r].c[2].t;
+                                        hbrk_p = eco_rows[r].c[1].t;
+                                        t_penalty += parseInt(hbrk_p);
+                                    }
+                
+                                }
+                            }
+                
+                            if(!('error' in obj[2])){ // process Over Speeding parameters 
+                                ovs_rows = obj[2];
+                                // console.log("over speeding durations");
+                                for (var v=0; v < ovs_rows.length; v++){
+                                    t_sec = timeToSeconds(ovs_rows[v].c[1].t);
+                                    // console.log(t_sec);
+                                    ovs_c++;
+                                    ovs_p += parseInt(t_sec/60);
+                                    t_penalty += ovs_p;
+                                }
+                            }
+                
+                            t_score = Math.round((t_penalty/u_mileage)*100);
+                            if(0 <= t_score <= 2 ) s_color = "green";
+                            else if(2 < t_score <= 5 ) s_color = "yellow";
+                            else if(t_score > 5) s_color = "red";
+                            
+                
+                            console.log("ovs count :" + ovs_c);
+                            console.log("ovs pnalty :" + ovs_p);
+                            console.log("hacc count :" + hacc_c);
+                            console.log("hacc pnalty :" + hacc_p);
+                            console.log("hbrk count :" + hbrk_c);
+                            console.log("hbrk pnalty :" + hbrk_p);
+                            console.log("total pnalty :" + t_penalty);
+                
+                            var dsc = {
+                                "id": i+1,
+                                "s_color": s_color,
+                                "transporter_id":tp_id,
+                                "drv_name": u_lic,
+                                "drv_lic": d_lic,
+                                "tot_mileage": u_mileage.toLocaleString('en') ,
+                                "site_name":d_site_name,
+                                "hbrk_penalty": hbrk_p,
+                                "hbrk_occur": hbrk_c,
+                                "hacc_penalty": hacc_p,
+                                "hacc_occur": hacc_c,
+                                "ovs_penlty": ovs_p,
+                                "ovs_duration": ovs_c,
+                                "drvtime_penalty": drvt_p,
+                                "drvtime_mins": drt_m,
+                                "resting_penalty": rst_p,
+                                "score": t_score
+                            }
+                            var dscTemp = _.template($("#dsc-data").html());
+                            dt.row.add($(dscTemp({"dsc": dsc})));
+                            if(i==0) dt.row(0).remove();
+                            dt.draw();
+                            // p++;
+                        } //end of if
+                        calculateScores(i+1);
+                    });
+                }else{ 
+                    // p--; 
+                    calculateScores(i+1);
+                }
+            }
+        };   
+        //     })(i) //end of closure
+        // }// end of forloop
+        // dt.row(0).remove().draw();
+        calculateScores(0);
+    });
+};
 
 var vlrReport = function(){
     var cTitles = _.template($("#vlr-cols").html());
