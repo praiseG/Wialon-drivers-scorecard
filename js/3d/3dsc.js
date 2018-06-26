@@ -1032,8 +1032,8 @@ var getDriverScoreFactors = function(){
                     var t_score  = 0;
                     var d_name = "unknown";
                     var d_lic = "unknown";
-                    var d_site_name = "unknown";
-                    var ovs_c = 0;
+                    var u_site_name = "unknown";
+                    var ovs_c = "00:00:00";
                     var ovs_p = 0;
                     var hacc_c = 0;
                     var hacc_p = 0;
@@ -1043,12 +1043,24 @@ var getDriverScoreFactors = function(){
                     var drvt_p = 0;
                     var rst_p = 0;
                     var s_color = null;
+                    var t_mileage = 0;
+
+                    var  cusFields = _.values(u.getCustomFields());
+                    // console.log("custom fields");
+                    // console.log(cusFields);
+                    if(_.size(cusFields) > 0){
+                        _.each(cusFields,function(cField, index, list){
+                        if(cField.n == "Site Name") u_site_name = cField.v;
+                        else if(cField.n == "Driver License ID") d_lic = cField.v;
+                        });
+                    }
                     
                     // General batch params
                     var params = [
                     {"svc": 'report/exec_report', "params":{"reportResourceId": res_id,"reportTemplateId": 48,"reportObjectId": unit_id,"reportObjectSecId":0,"interval": {"flags": 0,"from": t_from,"to": t_to}}},
                     {"svc": "report/select_result_rows","params": {"tableIndex": 0,"config": {"type": 'range',"data": {"from": 0,"to": 0xFFFF,"level": 1,"rawValues": 1}}}}, 
                     {"svc": "report/select_result_rows","params": {"tableIndex": 1,"config": {"type": 'range',"data": {"from": 0,"to": 0xFFFF,"level": 1,"rawValues": 1}}}},
+                    {"svc": "report/select_result_rows","params": {"tableIndex": 2,"config": {"type": 'range',"data": {"from": 0,"to": 0xFFFF,"level": 1,"rawValues": 1}}}},
                     {"svc": "report/cleanup_result","params": {}}];
 
                     //execute and process report
@@ -1075,28 +1087,48 @@ var getDriverScoreFactors = function(){
                                             hbrk_p = eco_rows[r].c[1].t;
                                             t_penalty += parseInt(hbrk_p);
                                         }
-                    
+                                        
+                                        if((d_name == "unknown") && eco_rows[r].c[3].t){
+                                            d_name = ovs_rows[r].c[3].t;
+                                        }
                                     }
                                     console.log("eco driving penalty total " + t_penalty);
                                 }else if( (r_tables[q].name == "unit_speedings") && !('error' in obj[q+1])){ // process Over Speeding parameters 
+                                    // var ovs_rows = obj[q+1];
+                                    // var t_sec = 0;
+                                    // // console.log("over speeding durations");
+                                    // for (var v=0; v < ovs_rows.length; v++){
+                                    //     var u_dur = ovs_rows[v].c[1].t;
+                                    //     t_sec += timeToSeconds(u_dur);
+                                    //     // console.log(t_sec);
+                                    //     // ovs_c++;
+                                    // }
+                                    // ovs_p += parseInt(t_sec/60);
+                                    // t_penalty += ovs_p;
+                                    // ovs_c = (new Date).clearTime().addSeconds(t_sec).toString('H:mm:ss');
                                     var ovs_rows = obj[q+1];
-                                    var t_sec = 0;
-                                    // console.log("over speeding durations");
                                     for (var v=0; v < ovs_rows.length; v++){
-                                        t_sec += timeToSeconds(ovs_rows[v].c[1].t);
-                                        // console.log(t_sec);
-                                        ovs_c++;
+                                        if((d_name == "unknown") && ovs_rows[v].c[1].t){
+                                            d_name = ovs_rows[v].c[1].t;
+                                            break;
+                                        }
                                     }
+                                    ovs_c = r_tables[q].total[0];
+                                    var t_sec = timeToSeconds(ovs_c);
                                     ovs_p += parseInt(t_sec/60);
                                     t_penalty += ovs_p;
                                     console.log("Speeding penalty total " + t_penalty);
+                                }else if( (r_tables[q].name == "unit_trips") && !('error' in obj[q+1])){ // process Trips parameters 
+                                    var t_mil = (r_tables[q].total[0]).split(" ");
+                                    t_mileage = t_mil[0]; 
+                                    console.log("Total Mileage : " + t_mileage);
                                 }
                             }
                             
-                            t_score = Math.round((t_penalty/u_mileage)*100);
-                            if(0 <= t_score <= 2 ) s_color = "green";
-                            else if(2 < t_score <= 5 ) s_color = "yellow";
-                            else if(t_score > 5) s_color = "red";
+                            t_score = Math.round((t_penalty/t_mileage)*100);
+                            if(0 <= t_score && t_score <= 2 ){ s_color = "green";}
+                            else if(2 < t_score && t_score <= 5 ){s_color = "yellow";}
+                            else if(t_score > 5){ s_color = "red";}
                             
                 
                             console.log("ovs count :" + ovs_c);
@@ -1115,13 +1147,13 @@ var getDriverScoreFactors = function(){
                                 "drv_name": d_name,
                                 "vehicle_license": u_lic,
                                 "drv_lic": d_lic,
-                                "tot_mileage": u_mileage.toLocaleString('en') ,
-                                "site_name":d_site_name,
+                                "tot_mileage": t_mileage.toLocaleString('en'),
+                                "site_name":u_site_name,
                                 "hbrk_penalty": hbrk_p,
                                 "hbrk_occur": hbrk_c,
                                 "hacc_penalty": hacc_p,
                                 "hacc_occur": hacc_c,
-                                "ovs_penlty": ovs_p,
+                                "ovs_penlty": ovs_p.toLocaleString('en'),
                                 "ovs_duration": ovs_c,
                                 "drvtime_penalty": drvt_p,
                                 "drvtime_mins": drt_m,
@@ -1251,8 +1283,6 @@ var onLoad = function(){
 	// var url = getHtmlVar("baseUrl") || getHtmlVar("hostUrl") || "https://hst-api.wialon.com";
     loadScript("https://hst-api.wialon.com/wsdk/script/wialon.js", initSdk);
     // initSdk();
-   
-
     // loadReportTemplate("t-vlr");
     // vlrReport();
 };
