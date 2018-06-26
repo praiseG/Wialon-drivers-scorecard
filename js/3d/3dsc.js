@@ -1,12 +1,12 @@
 /// Global event handlers
 var callbacks = {};
 var timeToSeconds = function(hms_time){
+    if(!hms_time) return;
     var t = hms_time.split(':');
     var seconds = (+t[0]) * 3600 + (+t[1]) * 60 + (+t[2]); 
     return seconds;
 
 }
-
 
 var getTransporterFromUnitName = function(unit_name){
     if(!unit_name) return;
@@ -16,6 +16,7 @@ var getTransporterFromUnitName = function(unit_name){
     unit_license = unit_name.slice(0, start);
     return {"transporter":transporter, "unit_license": unit_license }
 }
+
 //Date/DtePicker functions
 var showPickerFields = function(){
     //pick variables from cookie
@@ -484,7 +485,7 @@ var executeReport = function(unit) {
             console.log("report successful see obj below");
             console.log(obj);
             if(!('error' in obj[1])){ // process Eco Driving parameters 
-                eco_rows = obj[1];
+                var eco_rows = obj[1];
                 console.log("eco driving params");
                 for (var r=0; r < eco_rows.length; r++){
                     var violation = eco_rows[r].c[0].t;
@@ -502,8 +503,9 @@ var executeReport = function(unit) {
             }
 
             if(!('error' in obj[2])){ // process Over Speeding parameters 
-                ovs_rows = obj[2];
+                var ovs_rows = obj[2];
                 console.log("over speeding durations");
+                t_duration = 0;
                 for (var v=0; v < ovs_rows.length; v++){
                     t_sec = timeToSeconds(ovs_rows[v].c[1].t);
                     console.log(t_sec);
@@ -514,9 +516,9 @@ var executeReport = function(unit) {
             }
 
             t_score = Math.round((t_penalty/unit.mileage)*100);
-            if(0 <= t_score <= 2 ) s_color="green";
-            else if(2 < t_score <= 5 ) s_color="yellow";
-            else if(t_score > 5) s_color="red";
+            if(0 <= t_score <= 2 ) { console.log("in green"); s_color = "green";}
+            else if(2 < t_score <= 5 ){ console.log("in yellow"); s_color = "yellow";}
+            else if(t_score > 5){ console.log("in red"); s_color = "red";}
             
 
             console.log("ovs count :" + ovs_c);
@@ -903,7 +905,7 @@ var getDriverScoreFactorsWhole = function(){
                     console.log("report successful see obj below");
                     console.log(obj);
                     if(!('error' in obj[1])){ // process Eco Driving parameters 
-                        eco_rows = obj[1];
+                        var eco_rows = obj[1];
                         console.log("eco driving params");
                         for (var r=0; r < eco_rows.length; r++){
                             var violation = eco_rows[r].c[0].t;
@@ -922,7 +924,7 @@ var getDriverScoreFactorsWhole = function(){
                     }
         
                     if(!('error' in obj[2])){ // process Over Speeding parameters 
-                        ovs_rows = obj[2];
+                        var ovs_rows = obj[2];
                         console.log("over speeding durations");
                         for (var v=0; v < ovs_rows.length; v++){
                             t_sec = timeToSeconds(ovs_rows[v].c[1].t);
@@ -1015,19 +1017,10 @@ var getDriverScoreFactors = function(){
                     var tp_id = u_dets["transporter"];
                     var u_lic = u_dets["unit_license"];
                     var u_mileage = u.getMileageCounter();
-                    // var unit = {
-                    //     "row_id": 0,
-                    //     "tp_id": tp_id,
-                    //     "mileage": u_mileage,
-                    //     "u_name": u_name,
-                    //     "u_id": u.getId()
-                    // };
-                    // console.log("executing Report");
-                    // executeReport(unit);
-                    
+                   
                     var unit_id = u.getId();
                     // console.log("res_id: " + res_id);
-                    console.log("unit_id : " + unit_id);
+                    // console.log("unit_id : " + unit_id);
                     var t_to = sess.getServerTime();
                     var t_from = t_to - parseInt(604800, 10);
                     t_from = 1521849600;
@@ -1066,37 +1059,40 @@ var getDriverScoreFactors = function(){
                         if (code === 0 && obj && obj.length && !('error' in obj[0]) && ('reportResult' in obj[0]) && obj[0].reportResult.tables.length > 0) {
                             console.log("report successful see obj below");
                             console.log(obj); // process these results well
-                            if(!('error' in obj[1])){ // process Eco Driving parameters 
-                                eco_rows = obj[1];
-                                // console.log("eco driving params");
-                                for (var r=0; r < eco_rows.length; r++){
-                                    var violation = eco_rows[r].c[0].t;
-                                    // console.log(violation);
-                                    if(violation == "Harsh Acceleration"){
-                                        hacc_c = eco_rows[r].c[2].t;
-                                        hacc_p = eco_rows[r].c[1].t;
-                                        t_penalty += parseInt(hacc_p);
-                                    }else if(violation == "Harsh Braking"){
-                                        hbrk_c = eco_rows[r].c[2].t;
-                                        hbrk_p = eco_rows[r].c[1].t;
-                                        t_penalty += parseInt(hbrk_p);
+                            var r_tables = obj[0].reportResult.tables;
+                            for (var q = 0; q < r_tables.length; q++ ){
+                                if( (r_tables[q].name == "unit_ecodriving") && !('error' in obj[q+1])){ // process Eco Driving parameters 
+                                    var eco_rows = obj[q+1];
+                                    for (var r=0; r < eco_rows.length; r++){
+                                        var violation = eco_rows[r].c[0].t;
+                                        // console.log(violation);
+                                        if(violation == "Harsh Acceleration"){
+                                            hacc_c = eco_rows[r].c[2].t;
+                                            hacc_p = eco_rows[r].c[1].t;
+                                            t_penalty += parseInt(hacc_p);
+                                        }else if(violation == "Harsh Braking"){
+                                            hbrk_c = eco_rows[r].c[2].t;
+                                            hbrk_p = eco_rows[r].c[1].t;
+                                            t_penalty += parseInt(hbrk_p);
+                                        }
+                    
                                     }
-                
-                                }
-                            }
-                
-                            if(!('error' in obj[2])){ // process Over Speeding parameters 
-                                ovs_rows = obj[2];
-                                // console.log("over speeding durations");
-                                for (var v=0; v < ovs_rows.length; v++){
-                                    t_sec = timeToSeconds(ovs_rows[v].c[1].t);
-                                    // console.log(t_sec);
-                                    ovs_c++;
+                                    console.log("eco driving penalty total " + t_penalty);
+                                }else if( (r_tables[q].name == "unit_speedings") && !('error' in obj[q+1])){ // process Over Speeding parameters 
+                                    var ovs_rows = obj[q+1];
+                                    var t_sec = 0;
+                                    // console.log("over speeding durations");
+                                    for (var v=0; v < ovs_rows.length; v++){
+                                        t_sec += timeToSeconds(ovs_rows[v].c[1].t);
+                                        // console.log(t_sec);
+                                        ovs_c++;
+                                    }
                                     ovs_p += parseInt(t_sec/60);
                                     t_penalty += ovs_p;
+                                    console.log("Speeding penalty total " + t_penalty);
                                 }
                             }
-                
+                            
                             t_score = Math.round((t_penalty/u_mileage)*100);
                             if(0 <= t_score <= 2 ) s_color = "green";
                             else if(2 < t_score <= 5 ) s_color = "yellow";
@@ -1110,12 +1106,14 @@ var getDriverScoreFactors = function(){
                             console.log("hbrk count :" + hbrk_c);
                             console.log("hbrk pnalty :" + hbrk_p);
                             console.log("total pnalty :" + t_penalty);
+                            console.log("s_color ;" + s_color);
                 
                             var dsc = {
                                 "id": i+1,
                                 "s_color": s_color,
                                 "transporter_id":tp_id,
-                                "drv_name": u_lic,
+                                "drv_name": d_name,
+                                "vehicle_license": u_lic,
                                 "drv_lic": d_lic,
                                 "tot_mileage": u_mileage.toLocaleString('en') ,
                                 "site_name":d_site_name,
@@ -1214,17 +1212,17 @@ var dscReport = function(){
             'pdf', 
             'print'
         ],
-        "columnDefs": [
-            {
-                "targets": [ 3 ],
-                "visible": false,
-                "searchable": false
-            },
-            {
-                "targets": [ 5 ],
-                "visible": false
-            }
-        ]
+        // "columnDefs": [
+        //     {
+        //         "targets": [ 3 ],
+        //         "visible": false,
+        //         "searchable": false
+        //     },
+        //     {
+        //         "targets": [ 5 ],
+        //         "visible": false
+        //     }
+        // ]
     });
 
     getDriverScoreFactors();
