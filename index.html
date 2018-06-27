@@ -71,7 +71,7 @@
                     <option class="select-option" value="Cycle Time Report" id="t-ctr">Cycle Time Report</option>
                 </select>
             </div>
-            <div class="btn-group btn-group-toggle ml-4" data-toggle="buttons" id="dTargets">
+            <div class="btn-group btn-group-toggle ml-4 date-displays" data-toggle="buttons" id="dTargets">
                 <label class="btn btn-outline-secondary active">
                   <input type="radio" name="options" id="yDate" autocomplete="off" checked> Yesterday
                 </label>
@@ -88,12 +88,12 @@
                   <input type="radio" name="options" id="cDate" autocomplete="off"> Custom
                 </label>
             </div>
-            <div class="form-inline picker-fields pl-20" style="display: none;">
-                <input type="text" class="form-control form-control-3d pl-4" id="fromDate" value=""> - 
-                <input type="text" class="form-control form-control-3d pl-4" id="toDate" value="">             
-                <button type="button" class="btn btn-sm btn-secondary ml-2">OK</button>
+            <div class="form-inline picker-fields date-displays pl-20" style="display: none;">
+                <input type="text" class="form-control form-control-3d pl-4" id="fromDate" value="" required> - 
+                <input type="text" class="form-control form-control-3d pl-4" id="toDate" value="" required>             
+                <button type="button" class="btn btn-sm btn-secondary ml-2" id="cusBtn">OK</button>
             </div>
-            <div class="form-inline picker-display pl-20">
+            <div class="form-inline picker-display date-displays pl-20">
                     <button type="button" class="btn btn-sm btn-secondary mr-1" id="prevDate"><i class="fas fa-caret-left"></i></button>
                     <input type="text" class="form-control form-control-3d pl-4" id="selDate" value="" disabled>             
                     <button type="button" class="btn btn-sm btn-secondary ml-1" id="nextDate"><i class="fas fa-caret-right"></i></button>
@@ -143,7 +143,8 @@
         <tr>
             <td><%= vhl.id %></td>
             <td><%= vhl.transporter_id %></td>
-            <td><% if(vhl.icon_url){ %><img src=<%= vhl.icon_url %> width="20px"><% } %><%= vhl.license_number %></td>
+            <!-- <td><% if(vhl.icon_url){ %><img src=<%= vhl.icon_url %> width="20px"><% } %><%= vhl.license_number %></td> -->
+            <td><%= vhl.license_number %></td>
             <td><%= vhl.vin %></td>
             <td><%= vhl.year_mke_model %></td>
             <td><%= vhl.site_name %></td>

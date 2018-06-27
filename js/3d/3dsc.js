@@ -8,13 +8,12 @@ var timeToSeconds = function(hms_time){
 
 }
 
-var getTransporterFromUnitName = function(unit_name){
-    if(!unit_name) return;
-    start = unit_name.indexOf("(");
-    end = unit_name.indexOf(")");
-    transporter = unit_name.slice(start+1, end);
-    unit_license = unit_name.slice(0, start);
-    return {"transporter":transporter, "unit_license": unit_license }
+var strToDate = function(sdate){
+    if(!sdate) return null;
+    var s_date = sdate.split(".");
+    console.log(s_date[2] + "-" + s_date[1] + "-" + s_date[0] + " 00:00:00");
+    // return new Date(s_date[2] + "-" + s_date[1] + "-" + s_date[0] + " 00:00:00");
+    return new Date(s_date[2] + "-" + s_date[1] + "-" + s_date[0]);
 }
 
 //Date/DtePicker functions
@@ -23,23 +22,15 @@ var showPickerFields = function(){
     // 1-Setup Picker Fields, 2-Hide Picker Display, 3-Show Picker Fields
     var rDates = Cookies.getJSON("rDates");
     console.log(rDates);
-    var fromDate = rDates.fDate;
-    var toDate = rDates.tDate;
+    var fromDate = new Date(rDates.fDate).toString('dd.MM.yyyy');
+    var toDate = new Date(rDates.tDate).toString('dd.MM.yyyy');
     //---Time Picker JS-----
     $("#fromDate").val(fromDate);
     $("#toDate").val(toDate);
     console.log(fromDate);
     $("#fromDate").datepicker({'dateFormat': "dd.mm.yy"});
-    // $("#fromDate").datepicker({
-    //     'defaultDate': Date.parse(fromDate),
-    //     'setDate': Date.parse(fromDate)
-    // });
     $("#toDate").datepicker({'dateFormat': "dd.mm.yy"});
-    // $("#toDate").datepicker({
-    //     'defaultDate': '04.06.2018',
-    //     'setDate': toDate
-    // });
-   
+  
     $(".picker-display").hide();
     $(".picker-fields").show();
 }
@@ -53,7 +44,7 @@ var showPickerDisplays = function(period, sDate){
     }else{
         $("#selDate").removeClass("form-control-sel");
     }
-    $("#selDate").val(sDate);
+    $("#selDate").val(sDate.toString('dd.MM.yyyy'));
     $(".picker-fields").hide();
     $(".picker-display").show();
 }
@@ -70,26 +61,26 @@ var getDates = function(target){
     // sets the date &   type of clicked/selected button in a coookie
     setCookies("period", target);
     if(target == "tDate"){
-        minDate = maxDate = Date.today().toString('dd.MM.yyyy');
-        setCookies("rDates", {fDate: minDate, tDate: maxDate});
-        setCookies("selDates", minDate);
+        var minDate = Date.today();
+        setCookies("rDates", {fDate: minDate, tDate: minDate});
+        setCookies("selDates", minDate.toString('dd.MM.yyyy'));
         showPickerDisplays(target,minDate);
     }else if (target == "yDate"){
-        minDate = maxDate = Date.parse("yesterday").toString('dd.MM.yyyy');
-        setCookies("rDates", {fDate: minDate, tDate: maxDate});
-        setCookies("selDates", minDate);
+        var minDate = Date.parse("yesterday");
+        setCookies("rDates", {fDate: minDate, tDate: minDate});
+        setCookies("selDates", minDate.toString('dd.MM.yyyy'));
         showPickerDisplays(target,minDate); 
     }else if(target == "wDate"){
-        minDate = Date.today().last().week().toString('dd.MM.yyyy');
-        maxDate = Date.today().toString('dd.MM.yyyy');
-        sDate = minDate + "-" + maxDate;
+        var minDate = Date.today().last().week();
+        var maxDate = Date.today();
+        var sDate = minDate.toString('dd.MM.yyyy') + "-" + maxDate.toString('dd.MM.yyyy');
         setCookies("rDates", {fDate: minDate, tDate: maxDate});
         setCookies("selDates", sDate);
         showPickerDisplays(target,sDate); 
     }else if (target == "mDate"){
-        minDate = new Date().moveToFirstDayOfMonth().toString('dd.MM.yyyy');
-        maxDate = new Date().moveToLastDayOfMonth().toString('dd.MM.yyyy');
-        sDate = minDate + "-" + maxDate;
+        var minDate = new Date().moveToFirstDayOfMonth();
+        var maxDate = new Date().moveToLastDayOfMonth();
+        var sDate = minDate.toString('dd.MM.yyyy') + "-" + maxDate.toString('dd.MM.yyyy');
         setCookies("rDates", {fDate: minDate, tDate: maxDate});
         setCookies("selDates", sDate);
         showPickerDisplays(target, sDate); 
@@ -105,21 +96,23 @@ var getNextDate =  function(target){
     console.log(target);
 };
 
-
 var getPreviousDate =  function(target){
     // gets previous date when left arrow/carret is clicked
     console.log(target);
 };
 
-var getTimeIntervalFromInput = function(){
-    var interval = [];
-    t_from = $("#fromDate").val();
-    t_to = $("#toDate").val();
-    if(!t_from || !t_to) return null;
-    return interval[t_from, t_to];
+
+var getDateInterval = function(){
+    var rDates = Cookies.getJSON("rDates");
+    if(!rDates) return null;
+    var t_from = (new Date(rDates.fDate).getTime())/1000;
+    var t_to = (new Date(rDates.tDate).getTime())/1000;
+    // console.log("fromDate : toDate =" + t_from + " ====" + t_to);
+    return [t_from, t_to];
 };
 
 // wialon functions
+
 /// IE check
 function ie() {
 	return (navigator.appVersion.indexOf("MSIE 6") != -1 || navigator.appVersion.indexOf("MSIE 7") != -1 || navigator.appVersion.indexOf("MSIE 8") != -1);
@@ -184,7 +177,7 @@ function login(code){
     document.getElementById("username").innerHTML = username;
 
     // get Driver scorecrd report by default
-    window.setTimeout(function(){ $("#rTemplates").val("Drivers_Score_Card").trigger('change');}, 2000);
+    window.setTimeout(function(){ $("#rTemplates").val("Drivers_List_Report").trigger('change');}, 2000);
     
     window.onbeforeunload = function () {
 		wialon.core.Session.getInstance().logout();
@@ -212,8 +205,6 @@ function login(code){
     }
   }
 
-
-
 var clearReportResult = function() {
     console.log("inside clear report  result");
     var sess = wialon.core.Session.getInstance();
@@ -225,8 +216,17 @@ var clearReportResult = function() {
         console.log(code);
 	});
 };
-//Fetch all Units
 
+var getTransporterFromUnitName = function(unit_name){
+    if(!unit_name) return;
+    start = unit_name.indexOf("(");
+    end = unit_name.indexOf(")");
+    transporter = unit_name.slice(start+1, end);
+    unit_license = unit_name.slice(0, start);
+    return {"transporter":transporter, "unit_license": unit_license }
+}
+
+//Fetch all Units
 var fetchUnits = function(){
     var sess = wialon.core.Session.getInstance();
 
@@ -846,6 +846,7 @@ var getDriverScoreFactorsWhole = function(){
         var res_id = sess.getCurrUser().getAccountId();
         res_id = 15452548;
         for (var i = 0, p = 0; i< units.length; i++, p++){ 
+            if(i==0) dt.row(0).remove();
             var u = units[i]; 
             // var u = units[2]; 
             var u_name = u.getName();
@@ -970,7 +971,6 @@ var getDriverScoreFactorsWhole = function(){
                     }
                     var dscTemp = _.template($("#dsc-data").html());
                     dt.row.add($(dscTemp({"dsc": dsc})));
-                    if(i==0) dt.row(0).remove();
                     dt.draw();
                 }
             });
@@ -990,6 +990,9 @@ var getDriverScoreFactors = function(){
     sess.loadLibrary("unitTripDetector");
 
     var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields, wialon.item.Item.dataFlag.customProps, wialon.item.Item.dataFlag.guid, 256, 8388608, 131072, 524288, 8192);
+
+    //getset time interval
+    var d_intervals = getDateInterval();
 
     sess.updateDataFlags( 
     [{type: "type", data: "avl_unit", flags: flags, mode: 0}], 
@@ -1021,10 +1024,12 @@ var getDriverScoreFactors = function(){
                     var unit_id = u.getId();
                     // console.log("res_id: " + res_id);
                     // console.log("unit_id : " + unit_id);
-                    var t_to = sess.getServerTime();
-                    var t_from = t_to - parseInt(604800, 10);
-                    t_from = 1521849600;
-                    t_to = 1529884740;
+                    // var t_to = sess.getServerTime();
+                    // var t_from = t_to - parseInt(604800, 10);
+                    var t_to = d_intervals[1];
+                    var t_from = d_intervals[0];
+                    // t_from = 1521849600;
+                    // t_to = 1529884740;
                     console.log("t_to :" + t_to);
                     console.log("t_from :" + t_from);
 
@@ -1087,7 +1092,7 @@ var getDriverScoreFactors = function(){
                                             hbrk_p = eco_rows[r].c[1].t;
                                             t_penalty += parseInt(hbrk_p);
                                         }
-                                        
+
                                         if((d_name == "unknown") && eco_rows[r].c[3].t){
                                             d_name = ovs_rows[r].c[3].t;
                                         }
@@ -1265,17 +1270,23 @@ var dscReport = function(){
 var loadReportTemplate = function(rTemp){
     console.log(rTemp);
     if(rTemp == "t-dlr"){
-        // $(".picker-display", ".picker-fields ").hide();
+        $(".date-displays").hide();
         dlrReport();
     }else if(rTemp == "t-vlr"){
         console.log("in vlrTempsecton");
-        // $(".picker-display", ".picker-fields").hide();
+        $(".date-displays").hide();
         vlrReport();
     }
     else if(rTemp == "t-dsc"){
-        // $(".picker-display", ".picker-fields").show();
+        $(".date-displays").show();
+        $(".picker-fields").hide();
         dscReport();
     }
+};
+
+var loadActiveReport = function(){
+    var rTmp = $(this).find(":selected").prop('id');
+    loadReportTemplate(rTmp);
 };
 
 var onLoad = function(){
@@ -1297,6 +1308,7 @@ $(document).ready( function () {
     $("#dTargets label").on('click',function(){
         var target = $(this).children("input").prop("id");
         getDates(target);
+        //load selected report template with new date interval
     });
 
     $("#rTemplates").change(function(){
@@ -1308,6 +1320,19 @@ $(document).ready( function () {
         $("#reportTitle").text(sTitle);
         //store load selected template
         loadReportTemplate(sTemp);
+    });
+
+    $("#cusBtn").click(function(){
+        var t_from = $("#fromDate").val();
+        var t_to = $("#toDate").val();
+        if(!t_from || !t_to) alert("Select fromDate and toDate");
+        var minDate = strToDate(t_from);
+        var maxDate = strToDate(t_to);
+        setCookies("rDates", {fDate: minDate, tDate: maxDate});
+        console.log("t_from + t_to : " + t_from + " " + t_to);
+        getDateInterval();
+        //load report of selected/active template 
+        loadActiveReport();
     });
 
     onLoad();
