@@ -177,7 +177,9 @@ function login(code){
     document.getElementById("username").innerHTML = username;
 
     // get Driver scorecrd report by default
-    window.setTimeout(function(){ $("#rTemplates").val("Drivers_List_Report").trigger('change');}, 2000);
+    window.setTimeout(function(){ $("#rTemplates").val("Drivers_Score_Card").trigger('change');}, 2000);
+    // window.setTimeout(function(){ $("#rTemplates").val("Drivers_List_Report").trigger('change');}, 2000);
+    
     
     window.onbeforeunload = function () {
 		wialon.core.Session.getInstance().logout();
@@ -334,6 +336,7 @@ var fetchUnits = function(){
    );
 };
 
+//Fetch All Drivers
 var fetchDrivers = function(){
     var sess = wialon.core.Session.getInstance(); // get instance of current Session
 
@@ -421,6 +424,74 @@ var fetchDrivers = function(){
             dt.row(0).remove().draw();         
     });
 };
+
+var fetchScores = function(){
+    var sess = wialon.core.Session.getInstance(); // get instance of current Session
+
+    var res_flags = wialon.item.Item.dataFlag.base | wialon.item.Resource.dataFlag.reports;
+	var unit_flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields, wialon.item.Item.dataFlag.customProps, wialon.item.Item.dataFlag.guid, 256, 8388608, 131072, 524288, 8192);
+	
+	sess.loadLibrary("resourceReports"); // load Reports Library
+	sess.updateDataFlags( // load items to current session
+		[{type: "type", data: "avl_resource", flags:res_flags , mode: 0}, 
+         {type: "type", data: "avl_unit", flags: unit_flags, mode: 0},
+         {type: "type", data: "avl_unit_group", flags: unit_flags, mode: 0}], 
+		function (code) { 
+			if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } 
+
+            var ress = sess.getItems("avl_resource");
+            var unit_grps = sess.getItems("avl_unit_group");
+            var units = sess.getItems("avl_unit");
+            var units_nav = "";
+            var lsug = []; 
+            var ug_html = "";
+
+            if (!units || !units.length){ console.log("No Units found"); return; } 
+            if (!unit_grps || !unit_grps.length){ console.log("No Unit Groups found"); return; }       
+            if (!ress || !ress.length){ console.log("No Resources found"); return; } 
+            // get the ug_resource from the resources list and store it in localStorage
+
+            // get and store all drivers under this reource in localStorage
+            // get all units under this account and store them in local storage for later reference
+            // loop through all unit groups, store them and their units in localstorage and load them in their dropdown select
+            // load only units from the .All units ug unit groupin the unit_ist
+            // get and display only the scorecard report for only the .All units 
+
+
+
+            //---Action--------
+            //populting unit groups and storing them in localstorage
+            _.each(unit_grps,function(ug, index, list){
+                var gid = "" + ug.getId();
+                var gunits = ug.getUnits();
+                var gname = ug.getName();
+                ug_html += '<option class="select-option" id="'+ gid + '">' + gname +'</option>';
+                lsug.push[{gid: gunits}];
+                console.log(gid);
+            });
+             //populting unit list and storing them in localstorage
+             _.each(units,function(unt, index, list){
+                var uname = unt.getName();
+                if(!(uname.endsWith("(Cam)"))){
+                    var uid = "" + unt.getId();
+                    units_nav += '<a href="#" class="list-group-item list-group-item-action uname" id="' + uid + '">'+ uname + '<span class="badge float-right"><i class="fas fa-arrow-circle-right fa-lg"></i></span></a>';
+                    // lsug.push[{gid: gunits}];
+                    // console.log(gid);
+                }
+            });
+            $("#groups-list").append(ug_html);
+
+            units_nav += '<a href="#" class="list-group-item list-group-item-action disabled text-center"><h6>Total: '+ units.length +'</h6></a>';
+            $("#unit-loading").hide();
+            $("#unit-list-items").append(units_nav);
+            
+            console.log("unit_grps here");
+            console.log (unit_grps);
+            console.log("resources");
+            console.log(ress);
+            console.log(units);
+        });
+}
 
 function getTableValue(data) { // calculate ceil value
 	if (typeof data == "object")
@@ -672,7 +743,7 @@ var getDriverScoreFactors3 = function(){
 
             var ress = sess.getItems("avl_resource");
             var ugs = sess.getItems("avl_unit_group");
-            if (!ugs || !ress.length){ console.log("No Unit Groups found"); return; } 
+            if (!ugs || !ugs.length){ console.log("No Unit Groups found"); return; } 
             
 			if (!ress || !ress.length){ console.log("No Resources found"); return; } 
             
@@ -1188,7 +1259,7 @@ var getDriverScoreFactors = function(){
 
 var vlrReport = function(){
     var cTitles = _.template($("#vlr-cols").html());
-    $("#rpt-table").empty();
+    $("#rpt-table, #rpt-dsc").empty();
     $("#rpt-table").html(cTitles);
     $('#vlr-tbl').DataTable( {
         dom: 'Bfrtip',
@@ -1208,7 +1279,7 @@ var vlrReport = function(){
 
 var dlrReport = function(){
     var cTitles = _.template($("#dlr-cols").html());
-    $("#rpt-table").empty();
+    $("#rpt-table, #rpt-dsc").empty();
     $("#rpt-table").html(cTitles);
     $('#dlr-tbl').DataTable( {
         dom: 'Bfrtip',
@@ -1236,8 +1307,11 @@ var dlrReport = function(){
 
 var dscReport = function(){
     var cTitles = _.template($("#dsc-cols").html());
+    console.log("work on dsc");
     $("#rpt-table").empty();
-    $("#rpt-table").html(cTitles);
+    $("#unit-score").empty();
+    $("#unit-list").show();
+    $("#unit-scores").html(cTitles);
     $('#dsc-tbl').DataTable( {
         dom: 'Bfrtip',
         buttons: [
@@ -1261,8 +1335,8 @@ var dscReport = function(){
         //     }
         // ]
     });
-
-    getDriverScoreFactors();
+    // getDriverScoreFactors();
+    fetchScores();
 };
 
 
@@ -1271,15 +1345,21 @@ var loadReportTemplate = function(rTemp){
     console.log(rTemp);
     if(rTemp == "t-dlr"){
         $(".date-displays").hide();
+        $("#unit-groups").hide();
+        $("#unit-list").hide();
         dlrReport();
     }else if(rTemp == "t-vlr"){
         console.log("in vlrTempsecton");
         $(".date-displays").hide();
+        $("#unit-groups").hide();
+        $("#unit-list").hide();
         vlrReport();
     }
     else if(rTemp == "t-dsc"){
         $(".date-displays").show();
         $(".picker-fields").hide();
+        $("#unit-groups").show();
+        $("#unit-list").show();
         dscReport();
     }
 };
@@ -1334,6 +1414,10 @@ $(document).ready( function () {
         //load report of selected/active template 
         loadActiveReport();
     });
+
+    // //plugin to search unit list -- not working using list.jd
+    // var options = {valueNames: ['uname']};
+    // var userList = new List('ugrs', options);
 
     onLoad();
 
