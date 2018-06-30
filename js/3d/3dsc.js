@@ -188,7 +188,7 @@ var getTransporterFromUnitName = function(unit_name){
 }
 
 //Fetch all Units
-var fetchUnits = function(){
+var fetchUnits = function(u_grp=null){
     var sess = wialon.core.Session.getInstance();
 
     sess.loadLibrary("itemIcon");
@@ -198,101 +198,140 @@ var fetchUnits = function(){
     sess.loadLibrary("unitEvents");
     sess.loadLibrary("unitTripDetector");
 
-
     var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields, wialon.item.Item.dataFlag.customProps, wialon.item.Item.dataFlag.guid, 256, 8388608, 131072, 524288, 8192);
-
   
     sess.updateDataFlags( 
-    [{type: "type", data: "avl_unit", flags: flags, mode: 0}], 
-    function (code) { 
-        console.log("codefu " + code);
-        if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } 
-        var units = sess.getItems("avl_unit");
-        units = wialon.util.Helper.filterItems(units, wialon.item.Item.accessFlag.execReports);
-        if (!units || !units.length){ console.log("Units not found"); return; } 
-        console.log("units hereee orig");
-        console.log(units);
-        var dt = $("#vlr-tbl").dataTable().api();
-        for (var i = 0, p = 0; i< units.length; i++, p++){
-        var u = units[i];
-        var u_name = u.getName();
-        // devType = u.getDeviceTypeId();
-        if(u_name.endsWith("(Cam)") || u_name.endsWith("(Eco Driving)") || u_name.startsWith("inspector.wiatag")){ p--; continue;}
-        // console.log(u);
-        if(u.getTripsHistory()){
-            console.log("trips history here");
-            console.log(u.getTripsHistory());
-            console.log("trips hist here");
-        }
-        if(u.getCurrentTrip()){
-            console.log("trips here");
-            console.log(u.getCurrentTrip());
-            console.log("trips here");
-        }
+        [{type: "type", data: "avl_unit", flags: flags, mode: 0},
+        {type: "type", data: "avl_unit_group", flags: flags, mode: 0}],
+        function (code) { 
+            console.log("codefu " + code);
+            if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } 
+            var units = sess.getItems("avl_unit");
+            units = wialon.util.Helper.filterItems(units, wialon.item.Item.accessFlag.execReports);
+            if (!units || !units.length){ console.log("Units not found"); return; } 
+            console.log("units hereee orig");
+            console.log(units);
+            var dt = $("#vlr-tbl").dataTable().api();
+            var a_units = [];
+            var ug_html = "";
+            if(u_grp){
+                console.log("a_units inside selected group");
+                console.log(a_units);
+                var grp = sess.getItem(u_grp);
+                console.log("selected group item ");
+                console.log(grp);
+                if (!grp){ console.log("Selected Unit Groups not found"); return; }     
+                var gunits = grp.getUnits();
+                var gname = grp.getName();
+                
+                console.log("looping through group units");
+                _.each(units,function(unt, index, list){
+                    var id = unt.getId();
+                    if(_.contains(gunits,id)) a_units.push(unt);
+                });
+                // }
+            }else{
+                var unit_grps = sess.getItems("avl_unit_group");
+                if (!unit_grps || !unit_grps.length){ console.log("No Unit Groups found"); return; } 
+                console.log("unit_grps here");
+                console.log (unit_grps);
+                ug_html += '<option class="select-option" id="" selected>All Units</option>';
+                _.each(unit_grps,function(ug, index, list){
+                    var gname = ug.getName();
+                    console.log(gname);
+                    if(gname != "Camera Units"){
+                        var gid = ug.getId();
+                        var gunits = ug.getUnits();
+                        ug_html += '<option class="select-option" id="'+ gid + '">' + gname +'</option>';
+                    }
+                    a_units = units;
+                });
+            }
+            if(ug_html){
+                $("#groups-list").empty();
+                $("#groups-list").html(ug_html);
+            }
+            if(a_units.length){
+                for (var i = 0, p = 0; i< a_units.length; i++, p++){
+                var u = a_units[i];
+                var u_name = u.getName();
+                // devType = u.getDeviceTypeId();
+                if(u_name.endsWith("(Cam)") || u_name.endsWith("(Eco Driving)") || u_name.startsWith("inspector.wiatag")){ p--; continue;}
+                // console.log(u);
+                if(u.getTripsHistory()){
+                    console.log("trips history here");
+                    console.log(u.getTripsHistory());
+                    console.log("trips hist here");
+                }
+                if(u.getCurrentTrip()){
+                    console.log("trips here");
+                    console.log(u.getCurrentTrip());
+                    console.log("trips here");
+                }
 
-        // console.log("driver activity");
-        // console.log(u.getDriverActivitySettings());
-        // console.log(u.getAdminFields());
-        var u_site_name = "unknown";
-        var u_site_id = "unknown";
-        var u_year = "unknown";
-        var u_make = "unknown";
-        var u_model ="unknown";
-        var u_vhl_vin = "unknown";
-        var  cusFields = _.values(u.getCustomFields());
-        // console.log("custom fields");
-        // console.log(cusFields);
-        if(_.size(cusFields) > 0){
-            _.each(cusFields,function(cField, index, list){
-            if(cField.n == "Site Name") u_site_name = cField.v;
-            else if(cField.n == "Site ID") u_site_id = cField.v;
-            });
-        }
+                // console.log("driver activity");
+                // console.log(u.getDriverActivitySettings());
+                // console.log(u.getAdminFields());
+                var u_site_name = "unknown";
+                var u_site_id = "unknown";
+                var u_year = "unknown";
+                var u_make = "unknown";
+                var u_model ="unknown";
+                var u_vhl_vin = "unknown";
+                var  cusFields = _.values(u.getCustomFields());
+                // console.log("custom fields");
+                // console.log(cusFields);
+                if(_.size(cusFields) > 0){
+                    _.each(cusFields,function(cField, index, list){
+                    if(cField.n == "Site Name") u_site_name = cField.v;
+                    else if(cField.n == "Site ID") u_site_id = cField.v;
+                    });
+                }
 
-        var  profileFields = _.values(u.getProfileFields());
-        
-        if(_.size(profileFields) > 0){
-            _.each(profileFields,function(pField, index, list){
-            if(pField.n == "year") u_year = pField.v;
-            else if(pField.n == "brand") u_make = pField.v;
-            else if(pField.n == "model") u_model = pField.v;
-            else if(pField.n == "vin") u_vhl_vin = pField.v;
-            });
-        
-        }
-        var u_time = 'unknown';
-        var u_address = 'unknown';
-        var u_pos = u.getPosition();
-        // console.log(u_pos);
-        if(u_pos){
-        u_time = wialon.util.DateTime.formatTime(u_pos.t);
-        // wialon.util.Gis.getLocations([{lon:u_pos.x, lat:u_pos.y}], function(code, address){ 
-        //     if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
-        //     u_address = address; // print message to log
-        // });
-        }
-        var u_dets = getTransporterFromUnitName(u_name);
-        var tp_id = u_dets["transporter"];
-        var u_lic = u_dets["unit_license"];
-        var unit = {
-            "id": p+1,
-            "icon_url": u.getIconUrl(32),
-            "transporter_id": tp_id, 
-            "license_number": u_lic, 
-            "vin": u_vhl_vin, 
-            "year_mke_model": u_year + "/" + u_make + "/" + u_model, 
-            "site_name": u_site_name, 
-            "site_id": u_site_id,
-            "ivms_id": u.getUniqueId(),
-            "last_gps_conn": u_time,
-            "last_trip_dt": u_time
-        };
-        var vhlTemp = _.template($("#vlr-data").html());
-        dt.row.add($(vhlTemp({"vhl": unit})));
-        }
-         dt.row(0).remove().draw();
-      }
-   );
+                var  profileFields = _.values(u.getProfileFields());
+                
+                if(_.size(profileFields) > 0){
+                    _.each(profileFields,function(pField, index, list){
+                    if(pField.n == "year") u_year = pField.v;
+                    else if(pField.n == "brand") u_make = pField.v;
+                    else if(pField.n == "model") u_model = pField.v;
+                    else if(pField.n == "vin") u_vhl_vin = pField.v;
+                    });
+                
+                }
+                var u_time = 'unknown';
+                var u_address = 'unknown';
+                var u_pos = u.getPosition();
+                // console.log(u_pos);
+                if(u_pos){
+                u_time = wialon.util.DateTime.formatTime(u_pos.t);
+                // wialon.util.Gis.getLocations([{lon:u_pos.x, lat:u_pos.y}], function(code, address){ 
+                //     if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
+                //     u_address = address; // print message to log
+                // });
+                }
+                var u_dets = getTransporterFromUnitName(u_name);
+                var tp_id = u_dets["transporter"];
+                var u_lic = u_dets["unit_license"];
+                var unit = {
+                    "id": p+1,
+                    "icon_url": u.getIconUrl(32),
+                    "transporter_id": tp_id, 
+                    "license_number": u_lic, 
+                    "vin": u_vhl_vin, 
+                    "year_mke_model": u_year + "/" + u_make + "/" + u_model, 
+                    "site_name": u_site_name, 
+                    "site_id": u_site_id,
+                    "ivms_id": u.getUniqueId(),
+                    "last_gps_conn": u_time,
+                    "last_trip_dt": u_time
+                };
+                var vhlTemp = _.template($("#vlr-data").html());
+                dt.row.add($(vhlTemp({"vhl": unit})));
+                }
+                dt.row(0).remove().draw();
+            }
+    });
 };
 
 //Fetch All Drivers
@@ -581,10 +620,7 @@ var fetchScores = function(u_grp=null){
                 ugrpt_id = u_grp;
                 var gunits = grp.getUnits();
                 var gname = grp.getName();
-                //get units for this group
-                // if(gname == ".All Units (LH UG)"){
-                //     a_units = units;
-                // }else{
+                
                 console.log("looping through group units");
                 _.each(units,function(unt, index, list){
                     var id = unt.getId();
@@ -597,41 +633,23 @@ var fetchScores = function(u_grp=null){
                 console.log("unit_grps here");
                 console.log (unit_grps);
                 _.each(unit_grps,function(ug, index, list){
-                    var gid = ug.getId();
-                    var gunits = ug.getUnits();
                     var gname = ug.getName();
                     console.log(gname);
-                    // console.log("gid = ugrp " + gid + "===" + u_grp);
-                    // if(index == 0) a_units = [];
-                    // if(u_grp && u_grp == gid){
-                    //     ugrpt_id = gid;
-                    //     console.log("a_units inside selected group");
-                    //     console.log(a_units);
-                    //     //get units for this group
-                    //     // if(gname == ".All Units (LH UG)"){
-                    //     //     a_units = units;
-                    //     // }else{
-                    //     console.log("looping through group units");
-                    //     _.each(units,function(unt, index, list){
-                    //         var id = unt.getId();
-                    //         if(_.contains(gunits,id)) a_units.push(unt);
-                    //     });
-                    //     // }
-                    // }else{
-                    if(gname == ".All Units (LH UG)"){ 
-                        ugrpt_id = gid;
-                        ug_html += '<option class="select-option" id="'+ gid + '" selected>' + gname +'</option>';
-                        _.each(units,function(unt, index, list){
-                            var id = unt.getId();
-                            if(_.contains(gunits,id)) a_units.push(unt);
-                        });
-                    }else{
-                        ug_html += '<option class="select-option" id="'+ gid + '">' + gname +'</option>';
+                    if(gname != "Camera Units"){
+                        var gid = ug.getId();
+                        var gunits = ug.getUnits();
+                        if(gname == ".All Units (LH UG)"){ 
+                            ugrpt_id = gid;
+                            ug_html += '<option class="select-option" id="'+ gid + '" selected>' + gname +'</option>';
+                            _.each(units,function(unt, index, list){
+                                var id = unt.getId();
+                                if(_.contains(gunits,id)) a_units.push(unt);
+                            });
+                        }else{
+                            ug_html += '<option class="select-option" id="'+ gid + '">' + gname +'</option>';
+                        }
                     }
-                        // a_units = units;
-                    // }
-                    // console.log("++++++++++++group units");
-                    // console.log(gunits);
+                   
                 });
             }
             if(ug_html){
@@ -1430,9 +1448,9 @@ var getDriverScoreFactors = function(){
     });
 };
 
-var vlrReport = function(){
+var vlrReport = function(gid=null){
     var cTitles = _.template($("#vlr-cols").html());
-    $("#rpt-table, #rpt-dsc").empty();
+    $("#rpt-table, #unit-list, #unit-scores" ).empty();
     $("#rpt-table").html(cTitles);
     $('#vlr-tbl').DataTable( {
         "pageLength": 12,
@@ -1448,12 +1466,12 @@ var vlrReport = function(){
         ]
     });
     console.log("in vlrReports");
-    fetchUnits();
+    fetchUnits(gid);
 };
 
 var dlrReport = function(){
     var cTitles = _.template($("#dlr-cols").html());
-    $("#rpt-table, #rpt-dsc").empty();
+    $("#rpt-table, #unit-list, #unit-scores" ).empty();
     $("#rpt-table").html(cTitles);
     $('#dlr-tbl').DataTable( {
         "pageLength": 12,
@@ -1533,7 +1551,7 @@ var loadReportTemplate = function(rTemp){
     }else if(rTemp == "t-vlr"){
         console.log("in vlrTempsecton");
         $(".date-displays").hide();
-        $("#unit-groups").hide();
+        // $("#unit-groups").hide();
         vlrReport();
     }
     else if(rTemp == "t-dsc"){
@@ -1561,8 +1579,8 @@ var login = function(code){
     document.getElementById("username").innerHTML = username;
 
     // get Driver scorecrd report by default
-    window.setTimeout(function(){ $("#rTemplates").val("Drivers_Score_Card").trigger('change');}, 2000);
-    // window.setTimeout(function(){ $("#rTemplates").val("Drivers_List_Report").trigger('change');}, 2000);
+    // window.setTimeout(function(){ $("#rTemplates").val("Drivers_Score_Card").trigger('change');}, 2000);
+    window.setTimeout(function(){ $("#rTemplates").val("Vehicles_List_Report").trigger('change');}, 2000);
     
     
     window.onbeforeunload = function () {
@@ -1632,6 +1650,8 @@ $(document).ready( function () {
         // alert("group list changed at :" + gid + "-" + rTmp);
         if(rTmp == "Drivers_Score_Card") {
             dscReport(gid);    
+        }else if (rTmp == "Vehicles_List_Report") {
+            vlrReport(gid);
         }
     });
 
