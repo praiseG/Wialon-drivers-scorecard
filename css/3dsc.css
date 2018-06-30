@@ -93,7 +93,7 @@ select > option{
 }
 
 .list-group{
-    max-height: 600px;
+    max-height: 430px;
     margin-bottom: 10px;
     overflow:scroll;
     -webkit-overflow-scrolling: touch;
@@ -104,3 +104,8 @@ select > option{
     background-color: #E9ECEF!important;
     border-color: #E9ECEF!important;
 }
+
+.group-select-3d{
+    min-width: 150px !important;
+}
+

@@ -73,8 +73,8 @@
                 </select>
             </div>
             <div class="ml-4 mr-2" id="unit-groups">
-                <select class="custom-select" id="groups-list">
-                    <option class="select-option" selected>All Units</option>
+                <select class="custom-select group-select-3d" id="groups-list">
+                    <!-- <option class="select-option" id="" selected>All Units</option> -->
                 </select>
             </div>
             <div class="btn-group btn-group-toggle ml-4 date-displays" data-toggle="buttons" id="dTargets">
@@ -110,13 +110,7 @@
         </div>
         <div class="row" id="rpt-dsc">
                <div class="col-md-3" id="unit-list">
-                    <div class="list-group list-group-3d" id="unit-list-items">
-                            <a href="#" class="list-group-item list-group-item-3d list-group-item-action active text-center">
-                              <strong>Units</strong>
-                            </a>
-                            <!-- <a href="#" class="list-group-item list-group-item-action"><input class="search form-control form-control-search" placeholder="Search" /></a> -->
-                            <a href="#" class="list-group-item list-group-item-action" id="unit-loading"><img src="./img/progress.gif" width="30px" height="30px"></a>
-                    </div>
+                    
                </div>
                <div class="col-md-9" id="unit-scores"></div>
         </div>
@@ -126,7 +120,7 @@
     <!-- TEMPLATES -->
     <!-- Vehicles List Report -->
     <script type="text/template" id="vlr-cols">
-        <table id="vlr-tbl" class="display" style="width:100%">
+        <table id="vlr-tbl" class="display compact" style="width:100%">
             <thead>
                 <tr>
                     <th>#</th>
@@ -161,8 +155,8 @@
         <tr>
             <td><%= vhl.id %></td>
             <td><%= vhl.transporter_id %></td>
-            <!-- <td><% if(vhl.icon_url){ %><img src=<%= vhl.icon_url %> width="20px"><% } %><%= vhl.license_number %></td> -->
-            <td><%= vhl.license_number %></td>
+            <td><% if(vhl.icon_url){ %><img src=<%= vhl.icon_url %> width="20px"><% } %> <%= vhl.license_number %></td>
+            <!-- <td><%= vhl.license_number %></td> -->
             <td><%= vhl.vin %></td>
             <td><%= vhl.year_mke_model %></td>
             <td><%= vhl.site_name %></td>
@@ -172,26 +166,10 @@
             <td><%= vhl.last_trip_dt %></td>
         </tr>   
     </script>
-    <script type="text/template" id="vlr2-data">
-        <% _.each(vehicles, function(vhl){  %>
-            <tr>
-                <td>1</td>
-                <td><%= vhl.transporter_id %></td>
-                <td><%= vhl.license_number %></td>
-                <td><%= vhl.vin %></td>
-                <td><%= vhl.year_mke_model %></td>
-                <td><%= vhl.site_name %></td>
-                <td><%= vhl.site_id %></td>
-                <td><%= vhl.ivms_id %></td>
-                <td><%= vhl.last_gps_conn %></td>
-                <td><%= vhl.last_trip_dt %></td>
-            </tr>   
-        <% }) %>          
-    </script>
 
     <!-- Drivers List Report -->
     <script type="text/template" id="dlr-cols">
-        <table id="dlr-tbl" class="display" style="width:100%">
+        <table id="dlr-tbl" class="display compact" style="width:100%">
             <thead>
                 <tr>
                     <th>#</th>
@@ -233,7 +211,7 @@
 
     <!-- Drivers ScoreCard -->
     <script type="text/template" id="dsc-cols">
-        <table id="dsc-tbl" class="display" style="width:100%">
+        <table id="dsc-tbl" class="display compact" style="width:100%">
             <thead>
                 <tr>
                     <th>#</th>
@@ -297,6 +275,26 @@
             <td><%= dsc.drvtime_mins %></td>
             <td><%= dsc.resting_penalty %></td>
             <td <% if(dsc.s_color){ %>bgcolor=<%= dsc.s_color %><% } %>><%= dsc.score %></td>
+        </tr>   
+    </script>
+
+    <!-- Units list -->
+    <script type="text/template" id="u-list-cols">
+        <table id="units-tbl" class="display compact" style="width:100%">
+            <thead>
+                <tr><th>Units</th></tr>
+            </thead>
+            <tbody> 
+                <tr><td><img src="./img/progress.gif" width="30px"></td></tr>
+            </tbody>
+        </table>   
+    </script>
+    <script type="text/template" id="u-list-data">
+        <tr>
+            <td id=<%= unt.uid %>>
+                <%= unt.uname %>
+                <a href="#" class="badge badge-3d float-right"><i class="fas fa-arrow-circle-right fa-lg" style="color: #6c757d !important;"></i></a>
+            </td>
         </tr>   
     </script>
   </body>
