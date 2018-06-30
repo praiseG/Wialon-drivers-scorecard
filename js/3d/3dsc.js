@@ -330,6 +330,8 @@ var fetchUnits = function(u_grp=null){
                 dt.row.add($(vhlTemp({"vhl": unit})));
                 }
                 dt.row(0).remove().draw();
+            }else{
+                alert("No Units Found");
             }
     });
 };
@@ -634,10 +636,10 @@ var fetchScores = function(u_grp=null){
                 console.log (unit_grps);
                 _.each(unit_grps,function(ug, index, list){
                     var gname = ug.getName();
+                    var gunits = ug.getUnits();
                     console.log(gname);
-                    if(gname != "Camera Units"){
-                        var gid = ug.getId();
-                        var gunits = ug.getUnits();
+                    if(gname != "Camera Units" && gunits.length){
+                        var gid = ug.getId();                       
                         if(gname == ".All Units (LH UG)"){ 
                             ugrpt_id = gid;
                             ug_html += '<option class="select-option" id="'+ gid + '" selected>' + gname +'</option>';
@@ -1551,12 +1553,14 @@ var loadReportTemplate = function(rTemp){
     }else if(rTemp == "t-vlr"){
         console.log("in vlrTempsecton");
         $(".date-displays").hide();
-        // $("#unit-groups").hide();
+        $("#groups-list").empty();
+        $("#unit-groups").show();
         vlrReport();
     }
     else if(rTemp == "t-dsc"){
         $(".date-displays").show();
         $(".picker-fields").hide();
+        $("#groups-list").empty();
         $("#unit-groups").show();
         dscReport();
     }
