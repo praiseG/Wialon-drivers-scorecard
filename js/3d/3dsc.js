@@ -926,7 +926,6 @@ var getDriverScoreFactors = function(){
 var vlrReport = function(gid=null){
     var cTitles = _.template($("#vlr-cols").html());
     $(".date-displays").hide();
-    $("#groups-list").empty();
     $("#unit-groups").show();
     $("#rpt-table, #unit-list, #unit-scores" ).empty();
     $("#rpt-table").html(cTitles);
