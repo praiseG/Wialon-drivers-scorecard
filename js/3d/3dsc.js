@@ -4,13 +4,19 @@ var callbacks = {};
 var errorCodes = {
     "1": "Invalid session",
     "2": "Invalid service name",
+    "3": "Invalid result",
+    "4": "Invalid input",
     "5": "Error performing request",
+    "6": "Unknown error",
     "7": "Access denied",
+    "8": "Invalid user name or password",
     "9": "Authorization server is unavailable",
+    "10": "Reached limit of concurrent requests",
     "1001": "No messages for selected interval",
     "1003": "Only one request is allowed at the moment",
     "1004": "Limit of messages has been exceeded",
-    "1005": "Execution time has exceeded the limit"
+    "1005": "Execution time has exceeded the limit",
+    "1011": "Your IP has changed or session has expired"
 };
 
 var timeToSeconds = function(hms_time){
@@ -18,13 +24,14 @@ var timeToSeconds = function(hms_time){
     var t = hms_time.split(':');
     var seconds = (+t[0]) * 3600 + (+t[1]) * 60 + (+t[2]); 
     return seconds;
-}
+};
 
-var strToDate = function(sdate,hrs=[0,0,0]){
+var strToDate = function(sdate, end_of_day){
     if(!sdate) return null;
     var s_date = sdate.split(".");
-    return new Date(new Date(s_date[2] + "-" + s_date[1] + "-" + s_date[0]).setHours(hrs[0], hrs[1], hrs[2])).toISOString();
-}
+    if(end_of_day) return moment(s_date[2] + "-" + s_date[1] + "-" + s_date[0], "YYYY-MM-DD").endOf('day').format();
+    return moment(s_date[2] + "-" + s_date[1] + "-" + s_date[0], "YYYY-MM-DD").startOf('day').format();
+};
 
 //Date/DtePicker functions
 var showPickerFields = function(){
@@ -32,18 +39,17 @@ var showPickerFields = function(){
     // 1-Setup Picker Fields, 2-Hide Picker Display, 3-Show Picker Fields
     var rDates = Cookies.getJSON("rDates");
     console.log(rDates);
-    var fromDate = new Date(rDates.fDate).toString('dd.MM.yyyy');
-    var toDate = new Date(rDates.tDate).toString('dd.MM.yyyy');
+    var fromDate = moment(rDates.fDate).format("DD.MM.YYYY");
+    var toDate = moment(rDates.tDate).format("DD.MM.YYYY");
     //---Time Picker JS-----
     $("#fromDate").val(fromDate);
     $("#toDate").val(toDate);
-    console.log(fromDate);
-    $("#fromDate").datepicker({'dateFormat': "dd.mm.yy"});
-    $("#toDate").datepicker({'dateFormat': "dd.mm.yy"});
+    $("#fromDate").datepicker({'dateFormat': "dd.mm.yy", 'maxDate': "+1d"});
+    $("#toDate").datepicker({'dateFormat': "dd.mm.yy", 'maxDate': "+1d"});
   
     $(".picker-display").hide();
     $(".picker-fields").show();
-}
+};
 
 var showPickerDisplays = function(period, sDate){
     //pick variables from cookie
@@ -54,10 +60,10 @@ var showPickerDisplays = function(period, sDate){
     }else{
         $("#selDate").removeClass("form-control-sel");
     }
-    $("#selDate").val(sDate.toString('dd.MM.yyyy'));
+    $("#selDate").val(sDate);
     $(".picker-fields").hide();
     $(".picker-display").show();
-}
+};
 
 var setCookies =  function(k,v){
     ck = Cookies.get(k);
@@ -65,35 +71,37 @@ var setCookies =  function(k,v){
         Cookies.remove(k)
     }
     Cookies.set(k,v);
-}
+};
 
 var getDates = function(target){
     // sets the date &   type of clicked/selected button in a coookie
     setCookies("period", target);
     if(target == "tDate"){
-        var minDate = new Date(new Date().setHours(0,0,0));
-        var maxDate = new Date(new Date().setHours(23,59,59)).toISOString();
-        setCookies("rDates", {fDate: minDate, tDate: maxDate});
-        setCookies("selDates", minDate.toString('dd.MM.yyyy'));
-        showPickerDisplays(target,minDate);
+        var minDate = moment().startOf('day');
+        var maxDate = moment().endOf('day');
+        var sDate = minDate.format("DD.MM.YYYY");
+        setCookies("rDates", {fDate: minDate.format(), tDate: maxDate.format()});
+        setCookies("selDates", sDate);
+        showPickerDisplays(target,sDate);
     }else if (target == "yDate"){
-        var minDate = Date.parse("yesterday");
-        var maxDate = new Date(new Date(minDate).setHours(23,59)).toISOString();
-        setCookies("rDates", {fDate: minDate, tDate: maxDate});
-        setCookies("selDates", minDate.toString('dd.MM.yyyy'));
-        showPickerDisplays(target,minDate); 
+        var minDate = moment().subtract(1, 'days').startOf('day');
+        var maxDate = moment().subtract(1, 'days').endOf('day');
+        var sDate =  minDate.format("DD.MM.YYYY");
+        setCookies("rDates", {fDate: minDate.format(), tDate: maxDate.format()});
+        setCookies("selDates", sDate);
+        showPickerDisplays(target,sDate); 
     }else if(target == "wDate"){
-        var minDate = Date.today().last().week();
-        var maxDate = new Date(new Date().setHours(23,59,59)).toISOString();;
-        var sDate = minDate.toString('dd.MM.yyyy') + "-" + maxDate.toString('dd.MM.yyyy');
-        setCookies("rDates", {fDate: minDate, tDate: maxDate});
+        var minDate = moment().subtract(1, 'weeks').startOf('week');
+        var maxDate = moment().subtract(1, 'weeks').endOf('week');
+        var sDate = minDate.format("DD.MM.YYYY") + "-" + maxDate.format("DD.MM.YYYY");
+        setCookies("rDates", {fDate: minDate.format(), tDate: maxDate.format()});
         setCookies("selDates", sDate);
         showPickerDisplays(target,sDate); 
     }else if (target == "mDate"){
-        var minDate = new Date((new Date().moveToFirstDayOfMonth()).setHours(23,59,59)).toISOString();
-        var maxDate = new Date((new Date().moveToLastDayOfMonth()).setHours(23,59,59)).toISOString();
-        var sDate = minDate.toString('dd.MM.yyyy') + "-" + maxDate.toString('dd.MM.yyyy');
-        setCookies("rDates", {fDate: minDate, tDate: maxDate});
+        var minDate = moment().subtract(1, 'months').startOf('month');
+        var maxDate = moment().subtract(1, 'months').endOf('month');
+        var sDate = minDate.format("DD.MM.YYYY") + "-" + maxDate.format("DD.MM.YYYY");
+        setCookies("rDates", {fDate: minDate.format(), tDate: maxDate.format()});
         setCookies("selDates", sDate);
         showPickerDisplays(target, sDate); 
     }else if (target == "cDate"){
@@ -103,23 +111,108 @@ var getDates = function(target){
     }
 };
 
-var getNextDate =  function(target){
-    // gets next date hen right arrow/carret is clicked
-    console.log(target);
+var getNextDate =  function(){
+    // gets next date when right arrow/carret is clicked
+    var active_tab = $("#dTargets label.active");
+    var active_id = active_tab.children("input").prop("id");
+    if(active_id == 'yDate'){
+        var rDates = Cookies.getJSON("rDates");
+        var minDate = moment(rDates.fDate).add(1, 'days');
+        var maxDate = moment(rDates.tDate).add(1, 'days');
+        var dToday = moment().startOf('day');
+        var sDate = minDate.format("DD.MM.YYYY");
+        setCookies("rDates", {fDate: minDate.format(), tDate: maxDate.format()});
+        setCookies("selDates", sDate);
+        showPickerDisplays(active_id,sDate);
+        console.log("min = today;" + minDate + "=" + dToday);
+        if(minDate.isSame(dToday)){
+            active_tab.removeClass("active");
+            $("#tDate").parent("label").addClass("active");
+        }
+    }else if(active_id == 'wDate'){
+        var rDates = Cookies.getJSON("rDates");
+        var tf = moment(rDates.fDate).add(1, 'weeks');
+        var tt = moment(rDates.tDate).add(1, 'weeks');
+        var dTEnd = moment().endOf('day');
+        var dTStart = moment().startOf('day');
+        console.log("tf tt:" + tf.format() + " " + tt.format() );
+        if(tf.isBefore(dTStart) || tf.isSame(dTStart)){
+            var minDate = tf;
+            var maxDate = tt.isAfter(dTEnd) ? dTEnd : tt;
+            var sDate = minDate.format("DD.MM.YYYY") + "-" + maxDate.format("DD.MM.YYYY");
+            setCookies("rDates", {fDate: minDate.format(), tDate: maxDate.format()});
+            setCookies("selDates", sDate);
+            showPickerDisplays(active_id,sDate); 
+        }
+    }else if(active_id == 'mDate'){
+        var rDates = Cookies.getJSON("rDates");
+        var tf = moment(rDates.fDate).add(1, 'months').startOf('month');
+        var tt = moment(rDates.tDate).add(1, 'months').endOf('month');
+        var dTEnd = moment().endOf('day');
+        var dTStart = moment().startOf('day');
+        console.log("tf tt:" + tf.format() + " " + tt.format() );
+        if(tf.isBefore(dTStart) || tf.isSame(dTStart)){
+            var minDate = tf;
+            var maxDate = tt.isAfter(dTEnd) ? dTEnd : tt;
+            var sDate = minDate.format("DD.MM.YYYY") + "-" + maxDate.format("DD.MM.YYYY");
+            setCookies("rDates", {fDate: minDate.format(), tDate: maxDate.format()});
+            setCookies("selDates", sDate);
+            showPickerDisplays(active_id,sDate); 
+        }
+    }
+    console.log(active_id);
 };
 
-var getPreviousDate =  function(target){
-    // gets previous date when left arrow/carret is clicked
-    console.log(target);
+var getPrevDate =  function(){
+    var active_tab = $("#dTargets label.active");
+    var active_id = active_tab.children("input").prop("id");
+    if(active_id == 'tDate'){
+        var minDate = moment().subtract(1, 'days').startOf('day');
+        var maxDate = moment().subtract(1, 'days').endOf('day');
+        var sDate =  minDate.format("DD.MM.YYYY");
+        setCookies("rDates", {fDate: minDate.format(), tDate: maxDate.format()});
+        setCookies("selDates", sDate);
+        showPickerDisplays(active_id,sDate); 
+        active_tab.removeClass("active");
+        $("#yDate").parent("label").addClass("active");
+    }else if(active_id == 'yDate'){
+        var rDates = Cookies.getJSON("rDates");
+        var minDate = moment(rDates.fDate).subtract(1, 'days');
+        var maxDate = moment(rDates.tDate).subtract(1, 'days');
+        var sDate =  minDate.format("DD.MM.YYYY");
+        setCookies("rDates", {fDate: minDate.format(), tDate: maxDate.format()});
+        setCookies("selDates", sDate);
+        showPickerDisplays(active_id,sDate);
+        console.log("min to max " + minDate + " " + maxDate);
+    }else if(active_id == 'wDate'){
+        var rDates = Cookies.getJSON("rDates");
+        var minDate = moment(rDates.fDate).subtract(1, 'weeks').startOf('week');
+        var maxDate = moment(rDates.fDate).subtract(1, 'weeks').endOf('week');
+        var sDate = minDate.format("DD.MM.YYYY") + "-" + maxDate.format("DD.MM.YYYY");
+        setCookies("rDates", {fDate: minDate.format(), tDate: maxDate.format()});
+        setCookies("selDates", sDate);
+        showPickerDisplays(active_id,sDate); 
+        console.log("min to max " + minDate + " " + maxDate);
+    }else if(active_id == 'mDate'){
+        var rDates = Cookies.getJSON("rDates");
+        var minDate = moment(rDates.fDate).subtract(1, 'months').startOf('month');
+        var maxDate = moment(rDates.fDate).subtract(1, 'months').endOf('month');
+        var sDate = minDate.format("DD.MM.YYYY") + "-" + maxDate.format("DD.MM.YYYY");
+        setCookies("rDates", {fDate: minDate.format(), tDate: maxDate.format()});
+        setCookies("selDates", sDate);
+        showPickerDisplays(active_id,sDate); 
+        console.log("min to max " + minDate + " " + maxDate);
+    }
+    console.log(active_id);
 };
 
 
 var getDateInterval = function(){
     var rDates = Cookies.getJSON("rDates");
     if(!rDates) return null;
-    var t_from = (new Date(rDates.fDate).getTime())/1000;
-    var t_to = (new Date(rDates.tDate).getTime())/1000;
-    // console.log("fromDate : toDate =" + t_from + " ====" + t_to);
+    var t_from = moment(rDates.fDate).unix();
+    var t_to = moment(rDates.tDate).unix();
+    console.log("intervals:fromDate : toDate =" + t_from + " ====" + t_to);
     return [t_from, t_to];
 };
 
@@ -186,10 +279,10 @@ var getTransporterFromUnitName = function(unit_name){
     transporter = unit_name.slice(start+1, end);
     unit_license = unit_name.slice(0, start);
     return {"transporter":transporter, "unit_license": unit_license }
-}
+};
 
 //Fetch all Units
-var fetchUnits = function(u_grp=null){
+var fetchUnitsRecur = function(u_grp){
     var sess = wialon.core.Session.getInstance();
 
     sess.loadLibrary("itemIcon");
@@ -198,9 +291,11 @@ var fetchUnits = function(u_grp=null){
     sess.loadLibrary("unitDriveRankSettings");
     sess.loadLibrary("unitEvents");
     sess.loadLibrary("unitTripDetector");
+    sess.loadLibrary("unitSensors");
+    
 
-    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields, wialon.item.Item.dataFlag.customProps, wialon.item.Item.dataFlag.guid, 256, 8388608, 131072, 524288, 8192);
-  
+    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Unit.dataFlag.sensors, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields, wialon.item.Item.dataFlag.customProps, wialon.item.Item.dataFlag.guid, 256, 8388608, 131072, 524288, 8192, 4096, 1048576);
+    
     sess.updateDataFlags( 
         [{type: "type", data: "avl_unit", flags: flags, mode: 0},
         {type: "type", data: "avl_unit_group", flags: flags, mode: 0}],
@@ -222,15 +317,174 @@ var fetchUnits = function(u_grp=null){
                 if (!grp){ console.log("Selected Unit Groups not found"); return; }     
                 var gunits = grp.getUnits();
                 var gname = grp.getName();
-    
-                console.log("looping through group units");
-                _.each(units,function(unt, index, list){
-                    var id = unt.getId();
-                    if(_.contains(gunits,id)) a_units.push(unt);
-                });
-                // }
+                
+                if(gunits.length){
+                    console.log("looping through group units");
+                    _.each(units,function(unt, index, list){
+                        var id = unt.getId();
+                        if(_.contains(gunits,id)) a_units.push(unt);
+                    });
+                }else{
+                    dt.row(0).remove().draw();
+                }
             }else{
                 var unit_grps = sess.getItems("avl_unit_group");
+                console.log("unit Groups");
+                console.log(unit_grps);
+                if (!unit_grps || !unit_grps.length){ console.log("No Unit Groups found"); return; } 
+                ug_html += '<option class="select-option" id="" selected>All Units</option>';
+                _.each(unit_grps,function(ug, index, list){
+                    var gname = ug.getName();
+                    // console.log(gname);
+                    if(gname != "Camera Units"){
+                        var gid = ug.getId();
+                        var gunits = ug.getUnits();
+                        ug_html += '<option class="select-option" id="'+ gid + '">' + gname +'</option>';
+                    }
+                    a_units = units;
+                });
+            }
+            if(ug_html){
+                $("#groups-list").empty();
+                $("#groups-list").html(ug_html);
+            }
+            if(a_units.length){
+                // for (var i = 0, p = 0; i< a_units.length; i++, p++){
+                    console.log("inside a_u loop");
+                var row_id = 0;
+                var loadUnit = function (n){
+                    if(n < a_units.length){
+                        console.log("inside if1 ");
+                        var u = a_units[n];
+                        var u_name = u.getName();
+                        // devType = u.getDeviceTypeId();
+                        if(!(u_name.endsWith("(Cam)")) && !(u_name.endsWith("(Eco Driving)")) && !(u_name.startsWith("inspector.wiatag"))){
+                            console.log("inside if2 ");
+                            var igH = u.getMessageParams();
+                            console.log("message params===" + u_name);
+                            console.log(igH);
+                            var t_to = sess.getServerTime();
+                            var t_from = t_to - parseInt(604800, 10);
+
+                                                  
+                            var u_site_name = "unknown";
+                            var u_site_id = "unknown";
+                            var u_year = "unknown";
+                            var u_make = "unknown";
+                            var u_model ="unknown";
+                            var u_vhl_vin = "unknown";
+                            var  cusFields = _.values(u.getCustomFields());
+                    
+                            if(_.size(cusFields) > 0){
+                                _.each(cusFields,function(cField, index, list){
+                                if(cField.n == "Site Name") u_site_name = cField.v;
+                                else if(cField.n == "Site ID") u_site_id = cField.v;
+                                });
+                            }
+
+                            var  profileFields = _.values(u.getProfileFields());
+                            
+                            if(_.size(profileFields) > 0){
+                                _.each(profileFields,function(pField, index, list){
+                                if(pField.n == "year") u_year = pField.v;
+                                else if(pField.n == "brand") u_make = pField.v;
+                                else if(pField.n == "model") u_model = pField.v;
+                                else if(pField.n == "vin") u_vhl_vin = pField.v;
+                                });
+                            
+                            }
+                            var u_time = 'unknown';
+                            var u_address = 'unknown';
+                            var u_pos = u.getPosition();
+                            if(u_pos) u_time = wialon.util.DateTime.formatTime(u_pos.t);
+
+                            var u_dets = getTransporterFromUnitName(u_name);
+                            var tp_id = u_dets["transporter"];
+                            var u_lic = u_dets["unit_license"];
+                            var unit = {
+                                "id": row_id++,
+                                "icon_url": u.getIconUrl(32),
+                                "transporter_id": tp_id, 
+                                "license_number": u_lic, 
+                                "vin": u_vhl_vin, 
+                                "year_mke_model": u_year + "/" + u_make + "/" + u_model, 
+                                "site_name": u_site_name, 
+                                "site_id": u_site_id,
+                                "ivms_id": u.getUniqueId(),
+                                "last_gps_conn": u_time,
+                                "last_trip_dt": u_time
+                            };
+                            var vhlTemp = _.template($("#vlr-data").html());
+                            u.getIgnitionHistory(3, 1, t_to, 0, 'Ignition', function(code, data) {
+                                if(code == 0 && !('error' in data))
+                                console.log("ignition history" + u.getName());
+                                console.log(code, data);
+                                var igh = data[0];
+                                console.log(igh);
+                                dt.row.add($(vhlTemp({"vhl": unit})));
+                                if(n == 0){dt.row(0).remove().draw();}else{dt.draw();}
+                                loadUnit(n+1);
+                            });
+                            
+                        }else {loadUnit(n+1);}//end if2
+
+                    }//end if1
+                }//end recur
+                loadUnit(0);
+            }
+    });
+};
+
+//Fetch all Units
+var fetchUnits = function(u_grp){
+    var sess = wialon.core.Session.getInstance();
+
+    sess.loadLibrary("itemIcon");
+    sess.loadLibrary("itemCustomFields");
+    sess.loadLibrary("itemProfileFields"); 
+    sess.loadLibrary("unitDriveRankSettings");
+    sess.loadLibrary("unitEvents");
+    sess.loadLibrary("unitTripDetector");
+    sess.loadLibrary("unitSensors");
+    
+
+    var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Unit.dataFlag.sensors, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields, wialon.item.Item.dataFlag.customProps, wialon.item.Item.dataFlag.guid, 256, 8388608, 131072, 524288, 8192, 4096, 1048576);
+    
+    sess.updateDataFlags( 
+        [{type: "type", data: "avl_unit", flags: flags, mode: 0},
+        {type: "type", data: "avl_unit_group", flags: flags, mode: 0}],
+        function (code) { 
+            console.log("codefu " + code);
+            if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } 
+            var units = sess.getItems("avl_unit");
+            units = wialon.util.Helper.filterItems(units, wialon.item.Item.accessFlag.execReports);
+            if (!units || !units.length){ console.log("Units not found"); return; } 
+            console.log("units hereee orig");
+            console.log(units);
+            var dt = $("#vlr-tbl").dataTable().api();
+            var a_units = [];
+            var ug_html = "";
+            if(u_grp){
+                var grp = sess.getItem(u_grp);
+                console.log("selected group item ");
+                console.log(grp);
+                if (!grp){ console.log("Selected Unit Groups not found"); return; }     
+                var gunits = grp.getUnits();
+                var gname = grp.getName();
+                
+                if(gunits.length){
+                    console.log("looping through group units");
+                    _.each(units,function(unt, index, list){
+                        var id = unt.getId();
+                        if(_.contains(gunits,id)) a_units.push(unt);
+                    });
+                }else{
+                    dt.row(0).remove().draw();
+                }
+            }else{
+                var unit_grps = sess.getItems("avl_unit_group");
+                console.log("unit Groups");
+                console.log(unit_grps);
                 if (!unit_grps || !unit_grps.length){ console.log("No Unit Groups found"); return; } 
                 ug_html += '<option class="select-option" id="" selected>All Units</option>';
                 _.each(unit_grps,function(ug, index, list){
@@ -265,7 +519,21 @@ var fetchUnits = function(u_grp=null){
                     console.log(u.getCurrentTrip());
                     console.log("trips here");
                 }
-
+                // // var igH = u.getIgnitionHistory(1, 1527973200, 1530565200);
+                // var igH = u.getMessageParams();
+                // console.log("message params===" + u_name);
+                // console.log(igH);
+                var t_to = sess.getServerTime();
+                var t_from = t_to - parseInt(604800, 10);
+                (function(cln){
+                    u = a_units[cln];
+                    u.getIgnitionHistory(3, 3, t_to, 0, 'Ignition', function(error, result) {
+                        console.log("ignition history" + u.getName());
+                        console.log(error, result);
+                    });
+                })(i);
+                // console.log("igH===");
+                // console.log(igH);
                 // console.log("driver activity");
                 // console.log(u.getDriverActivitySettings());
                 // console.log(u.getAdminFields());
@@ -327,8 +595,6 @@ var fetchUnits = function(u_grp=null){
                 dt.row.add($(vhlTemp({"vhl": unit})));
                 }
                 dt.row(0).remove().draw();
-            }else{
-                alert("No Units Found");
             }
     });
 };
@@ -351,7 +617,7 @@ var fetchDrivers = function(){
             if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } // exit if error code
             // get loaded 'avl_unit's items  
             var ress = sess.getItems("avl_resource");
-            console.log("***************resources**********");
+            console.log("***************resource heres**********");
             console.log(ress);
             console.log("***************resources**********");
             if (!ress || !ress.length){ console.log("No Resources found"); return; } // check if resources were found
@@ -422,6 +688,15 @@ var fetchDrivers = function(){
     });
 };
 
+var loadUnitScoreCard = function(unit){
+    console.log("score Unit: " + unit);
+     // process the unit - 
+            // append results to new table and 
+            // display x on the element data
+            // remove it from holder array
+            //remove progress rotation 
+};
+
 var loadGroupScoreCard = function(resid, ugid, units){
     console.log("inside group report");
     console.log("res - gid :" + resid + " " + ugid);
@@ -443,6 +718,7 @@ var loadGroupScoreCard = function(resid, ugid, units){
     console.log(ugid);
     console.log(t_from);
     console.log(t_to);
+
 
     var params=[{"svc": "report/exec_report", "params": {"reportResourceId": resid,"reportTemplateId": 49,"reportObjectId": ugid,"reportObjectSecId":0,"interval": {"flags": 0,"from": t_from,"to": t_to}}},{"svc": "report/select_result_rows", "params": {"tableIndex": 0,"config": {"type": "range","data": {"from": 0,"to": 0xFFFF,"level": 4,"rawValues": 0}}}},{"svc": "report/select_result_rows", "params": {"tableIndex": 1,"config": {"type": "range","data": {"from": 0,"to": 0xFFFF,"level": 4,"rawValues": 0}}}},{"svc": "report/select_result_rows", "params": {"tableIndex": 2,"config": {"type": "range","data": {"from": 0,"to": 0xFFFF,"level": 4,"rawValues": 0}}}},{"svc": "report/cleanup_result","params": {}}];
 
@@ -593,7 +869,7 @@ var loadGroupScoreCard = function(resid, ugid, units){
     });
 };
 
-var fetchScores = function(u_grp=null){
+var fetchScores = function(u_grp, interval_changed){
     var sess = wialon.core.Session.getInstance(); // get instance of current Session
 
     var res_flags = wialon.item.Item.dataFlag.base | wialon.item.Resource.dataFlag.reports;
@@ -624,9 +900,12 @@ var fetchScores = function(u_grp=null){
             if (!units || !units.length){ console.log("No Units found"); return; } 
             if (!ress || !ress.length){ console.log("No Resources found"); return; } 
             res_id = ress[0].getId();
+            // res_id = 15452548;
             
             console.log("units");
             console.log(units);
+            console.log("resources ==here");
+            console.log(ress);
             // get the ug_resource from the resources list and store it in localStorage
 
             // get and store all drivers under this reource in localStorage
@@ -652,7 +931,7 @@ var fetchScores = function(u_grp=null){
                 ugrpt_id = u_grp;
                 var gunits = grp.getUnits();
                 var gname = grp.getName();
-                
+                // if(!interval_changed){
                 console.log("looping through group units");
                 _.each(units,function(unt, index, list){
                     var id = unt.getId();
@@ -689,7 +968,7 @@ var fetchScores = function(u_grp=null){
                 $("#groups-list").html(ug_html);
             }
 
-            if(a_units.length){
+            if(a_units.length && !interval_changed){
                 console.log("loading units html");
                 //populting unit list and storing them in localstorage
                 _.each(a_units,function(unt, index, list){
@@ -707,11 +986,10 @@ var fetchScores = function(u_grp=null){
                     dtu.row(0).remove().draw();
                     utbl_drawn = false;
                 }
-
             }
             
             console.log("loding report now");
-            loadGroupScoreCard(res_id, ugrpt_id, a_units);
+            // loadGroupScoreCard(res_id, ugrpt_id, a_units);
         });
 };
 
@@ -923,7 +1201,7 @@ var getDriverScoreFactors = function(){
     });
 };
 
-var vlrReport = function(gid=null){
+var vlrReport = function(gid){
     var cTitles = _.template($("#vlr-cols").html());
     $(".date-displays").hide();
     $("#unit-groups").show();
@@ -931,6 +1209,9 @@ var vlrReport = function(gid=null){
     $("#rpt-table").html(cTitles);
     $('#vlr-tbl').DataTable( {
         "pageLength": 12,
+        "language": {
+            "emptyTable": "No Units Found"
+          },
         dom: 'Bfrtip',
         buttons: [
             'csv', 
@@ -976,19 +1257,29 @@ var dlrReport = function(){
     fetchDrivers();
 };
 
-var dscReport = function(gid=null){
+var dscReport = function(gid, interval_changed){
     var cTitles = _.template($("#dsc-cols").html());
-    var uTitles = _.template($("#u-list-cols").html());
     $(".date-displays").show();
     $(".picker-fields").hide();
     // $("#groups-list").empty();
     $("#unit-groups").show();
     $("#rpt-table").empty();
     $("#unit-score").empty();
-    $("#unit-list").empty();
-    $("#unit-list").html(uTitles);
+    if(!interval_changed){
+        var uTitles = _.template($("#u-list-cols").html());
+        $("#unit-list").empty();
+        $("#unit-list").html(uTitles);
+        $('#units-tbl').DataTable({
+            "scrollY":   "350px",
+            "scrollCollapse": true,
+            "paging":         false
+        });
+    }
     $("#unit-scores").html(cTitles);
     $('#dsc-tbl').DataTable( {
+        "language": {
+            "emptyTable": "No data available for selected interval"
+          },
         dom: 'Bfrtip',
         buttons: [
             'csv', 
@@ -1011,13 +1302,9 @@ var dscReport = function(gid=null){
         //     }
         // ]
     });
-    $('#units-tbl').DataTable({
-        "scrollY":   "350px",
-        "scrollCollapse": true,
-        "paging":         false
-    });
-    
-    fetchScores(gid);
+  
+    fetchScores(gid, interval_changed);
+
 };
 
 
@@ -1035,10 +1322,13 @@ var loadReportTemplate = function(rTemp){
 };
 
 var loadActiveReport = function(){
-    var rTmp = $(this).find(":selected").prop('id');
-    console.log("active report is :" + rTmp);
-    loadReportTemplate(rTmp);
-    
+    var rTmp = Cookies.get("sTemp");
+    var gid = parseInt($("#groups-list").find(":selected").prop('id'));
+    console.log("selected report:" + rTmp);
+    console.log(gid);
+    if(rTmp == "t-dsc"){
+        dscReport(gid, true);
+    } 
 };
 
 var login = function(code){
@@ -1053,7 +1343,6 @@ var login = function(code){
     // get Driver scorecrd report by default
     window.setTimeout(function(){ $("#rTemplates").val("Drivers_Score_Card").trigger('change');}, 2000);
     // window.setTimeout(function(){ $("#rTemplates").val("Vehicles_List_Report").trigger('change');}, 2000);
-    
     
     window.onbeforeunload = function () {
 		wialon.core.Session.getInstance().logout();
@@ -1091,24 +1380,24 @@ var onLoad = function(){
 
 $(document).ready( function () {
         
+    moment.tz.setDefault("Africa/Kampala");
+
     var aTarget = $(".active").children("input").prop("id");
     getDates(aTarget);
-
     //--Get Dates/ranges of clicked period buttons and display them accordingly
     $("#dTargets label").on('click',function(){
         var target = $(this).children("input").prop("id");
         getDates(target);
         //load selected report template with new date interval
+        // if(target != "cDate") loadActiveReport();
     });
 
     $("#rTemplates").change(function(){
-        // alert("changed");
         var rTmp = $(this).find(":selected");
         var sTitle= rTmp.text();
         var sTemp = rTmp.prop('id');
-        //update heading
         $("#reportTitle").text(sTitle);
-        //store load selected template
+        setCookies("sTemp", sTemp);
         loadReportTemplate(sTemp);
     });
 
@@ -1130,7 +1419,7 @@ $(document).ready( function () {
         var t_to = $("#toDate").val();
         if(!t_from || !t_to) alert("Select fromDate and toDate");
         var minDate = strToDate(t_from);
-        var maxDate = strToDate(t_to,[23,59,29]);
+        var maxDate = strToDate(t_to,true);
         setCookies("rDates", {fDate: minDate, tDate: maxDate});
         console.log("t_from + t_to : " + minDate + " " + maxDate);
         // getDateInterval();
@@ -1138,7 +1427,56 @@ $(document).ready( function () {
         loadActiveReport();
     });
 
+    $("#dBtn").click(function(){     
+        loadActiveReport();
+    });
 
+    $("#nextDate").click(function(){     
+        getNextDate();
+    });
+
+    $("#prevDate").click(function(){     
+        getPrevDate();
+    });
+
+    $("#unit-list").on("click", ".units-arrow", function(){
+        var id = parseInt($(this).parent("td").prop("id"));
+        console.log("selected id:fa-id" + id );
+        $(this).hide(); //disable/remove the arrow
+        $(this).siblings("span").show(); //show progress rotation/spinner
+        if(!($("#dsc-tbl-single").length)){  // Empty the unit-scores and Load new Datatable for individual scores
+            console.log("initialised here");
+            $("#unit-scores").empty();
+            var uTitles = _.template($("#dsc-cols-single").html());
+            $("#unit-scores").html(uTitles);
+            $("#dsc-tbl-single").DataTable( {
+                "language": {
+                    "emptyTable": "Loading Data.."
+                },
+                dom: 'Bfrtip',
+                buttons: [
+                    'csv', 
+                    {
+                        extend: 'excelHtml5',
+                        title: 'Drivers Score Card'
+                    },
+                    'pdf', 
+                    'print'
+                ]
+            });
+        }
+        // if unitQueueArray doesnt exist in local storage- create it
+        if(!localStorage.getItem("unit_squeue")) localStorage.setItem("unit_squeue",JSON.stringify([]));
+        var uQueue = JSON.parse(localStorage.getItem("unit_squeue"));
+
+        // acheck if the processqueueArray is empty : if yes, add it to the array and proceed to score else add it to the process array.
+        uQueue.push(id);
+        localStorage.setItem("unit_squeue",JSON.stringify(uQueue));
+        if(uQueue.length == 1) loadUnitScoreCard(id);
+        
+        console.log("uQueue =====");
+        console.log(uQueue);
+    });
     onLoad();
 
 } );
