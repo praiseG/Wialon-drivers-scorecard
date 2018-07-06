@@ -688,13 +688,181 @@ var fetchDrivers = function(){
     });
 };
 
-var loadUnitScoreCard = function(unit){
-    console.log("score Unit: " + unit);
-     // process the unit - 
-            // append results to new table and 
-            // display x on the element data
-            // remove it from holder array
-            //remove progress rotation 
+var loadUnitScoreCard = function(s_uid){
+    console.log("score Unit: " + s_uid);
+     // process the unit - // append results to new table and ---// display x on the element data ---// remove it from holder array---//remove progress rotation 
+     var uQueue = JSON.parse(localStorage.getItem("unit_squeue"));
+     var Qcounter = parseInt(localStorage.getItem("queue-counter"));
+     var uid = s_uid;
+     if(!uid && uQueue.length) uid = uQueue[0];
+     if(uid){
+        var sess = wialon.core.Session.getInstance(); 
+
+        sess.loadLibrary("itemIcon");
+        sess.loadLibrary("itemCustomFields");
+        sess.loadLibrary("itemProfileFields");
+        sess.loadLibrary("unitDriveRankSettings");
+        sess.loadLibrary("unitEvents");
+        sess.loadLibrary("unitTripDetector");
+    
+        var flags = wialon.util.Number.or(wialon.item.Item.dataFlag.base,  wialon.item.Unit.dataFlag.lastMessage, wialon.item.Item.dataFlag.customFields, wialon.item.Item.dataFlag.adminFields, wialon.item.Item.dataFlag.customProps, wialon.item.Item.dataFlag.guid, 256, 8388608, 131072, 524288, 8192);
+    
+       
+        
+        sess.updateDataFlags( 
+            [{type: "type", data: "avl_unit", flags: flags, mode: 0}], 
+                function (code) { 
+                console.log("code  " + code);
+                if (code) { console.log(wialon.core.Errors.getErrorText(code)); return; } 
+                var u = sess.getItem(uid);
+                console.log(u);
+                if (!u){ console.log("Unit not found"); return; } 
+               
+                var dt = $("#dsc-tbl-single").dataTable().api();
+                var res_id = sess.getCurrUser().getAccountId();
+                res_id = 15452548;
+
+                 //getset time interval
+                var d_intervals = getDateInterval();
+                var t_to = d_intervals[1];
+                var t_from = d_intervals[0];
+                console.log("t_to :" + t_to);
+                console.log("t_from :" + t_from);
+
+                var u_name = u.getName();
+                var u_dets = getTransporterFromUnitName(u_name);
+                var tp_id = u_dets["transporter"];
+                var u_lic = u_dets["unit_license"];
+
+                var t_penalty = 0;
+                var t_score  = 0;
+                var d_name = "unknown";
+                var d_lic = "unknown";
+                var u_site_name = "unknown";
+                var ovs_c = "00:00:00";
+                var ovs_p = 0;
+                var hacc_c = 0;
+                var hacc_p = 0;
+                var hbrk_c = 0;
+                var hbrk_p = 0;
+                var drt_m = 0;
+                var drvt_p = 0;
+                var rst_p = 0;
+                var s_color = null;
+                var t_mileage = 0;
+
+                var  cusFields = _.values(u.getCustomFields());
+                // console.log("custom fields");
+                // console.log(cusFields);
+                if(_.size(cusFields) > 0){
+                    _.each(cusFields,function(cField, index, list){
+                    if(cField.n == "Site Name") u_site_name = cField.v;
+                    });
+                }
+
+                // General batch params
+                var params = [
+                    {"svc": 'report/exec_report', "params":{"reportResourceId": res_id,"reportTemplateId": 48,"reportObjectId": uid,"reportObjectSecId":0,"interval": {"flags": 0,"from": t_from,"to": t_to}}},
+                    {"svc": "report/select_result_rows","params": {"tableIndex": 0,"config": {"type": 'range',"data": {"from": 0,"to": 0xFFFF,"level": 1,"rawValues": 1}}}}, 
+                    {"svc": "report/select_result_rows","params": {"tableIndex": 1,"config": {"type": 'range',"data": {"from": 0,"to": 0xFFFF,"level": 1,"rawValues": 1}}}},
+                    {"svc": "report/select_result_rows","params": {"tableIndex": 2,"config": {"type": 'range',"data": {"from": 0,"to": 0xFFFF,"level": 1,"rawValues": 1}}}},
+                    {"svc": "report/cleanup_result","params": {}}];
+                
+                //execute and process report
+                wialon.core.Remote.getInstance().remoteCall('core/batch', params, function (code, obj) {
+                    console.log("code obj: " + code);
+                    console.log(obj);
+                    if (code === 0 && obj && obj.length && !('error' in obj[0]) && ('reportResult' in obj[0]) && obj[0].reportResult.tables.length > 0) {
+                        console.log("report successful see obj below");
+                        console.log(obj); // process these results well
+                        var r_tables = obj[0].reportResult.tables;
+                        for (var q = 0; q < r_tables.length; q++ ){
+                            if( (r_tables[q].name == "unit_ecodriving") && !('error' in obj[q+1])){ // process Eco Driving parameters 
+                                var eco_rows = obj[q+1];
+                                for (var r=0; r < eco_rows.length; r++){
+                                    var violation = eco_rows[r].c[0].t;
+                                    // console.log(violation);
+                                    if(violation == "Harsh Acceleration"){
+                                        hacc_c = eco_rows[r].c[3].t;
+                                        hacc_p = eco_rows[r].c[2].t;
+                                        t_penalty += parseInt(hacc_p);
+                                    }else if(violation == "Harsh Braking"){
+                                        hbrk_c = eco_rows[r].c[3].t;
+                                        hbrk_p = eco_rows[r].c[2].t;
+                                        t_penalty += parseInt(hbrk_p);
+                                    }
+
+                                    if((d_name == "unknown") && eco_rows[r].c[4].t){
+                                        d_name = eco_rows[r].c[4].t;
+                                    }
+                                }
+                                console.log("eco driving penalty total " + t_penalty);
+                            }else if( (r_tables[q].name == "unit_speedings") && !('error' in obj[q+1])){ 
+                                if((d_name == "unknown") && r_tables[q].total[1]){
+                                    d_name = r_tables[q].total[1];
+                                }
+                                ovs_c = r_tables[q].total[0];
+                                var t_sec = timeToSeconds(ovs_c);
+                                ovs_p = parseInt(t_sec/60);
+                                t_penalty += ovs_p;
+                                console.log("Speeding penalty total " + t_penalty);
+                            }else if( (r_tables[q].name == "unit_trips") && !('error' in obj[q+1])){ // process Trips parameters 
+                                var t_mil = (r_tables[q].total[0]).split(" ");
+                                t_mileage = t_mil[0]; 
+                                console.log("Total Mileage : " + t_mileage);
+                            }
+                        }
+                        
+                        t_score = Math.round((t_penalty/t_mileage)*100);
+                        if(0 <= t_score && t_score <= 2 ){ s_color = "green";}
+                        else if(2 < t_score && t_score <= 5 ){s_color = "yellow";}
+                        else if(t_score > 5){ s_color = "red";}
+                        
+            
+                        console.log("ovs count :" + ovs_c);
+                        console.log("ovs pnalty :" + ovs_p);
+                        console.log("hacc count :" + hacc_c);
+                        console.log("hacc pnalty :" + hacc_p);
+                        console.log("hbrk count :" + hbrk_c);
+                        console.log("hbrk pnalty :" + hbrk_p);
+                        console.log("total pnalty :" + t_penalty);
+                        console.log("s_color ;" + s_color);
+            
+                        var dsc = {
+                            "id": Qcounter,
+                            "uid": uid,
+                            "s_color": s_color,
+                            "transporter_id":tp_id,
+                            "drv_name": d_name,
+                            "vehicle_license": u_lic,
+                            "drv_lic": d_lic,
+                            "tot_mileage": t_mileage.toLocaleString('en'),
+                            "site_name":u_site_name,
+                            "hbrk_penalty": hbrk_p,
+                            "hbrk_occur": hbrk_c,
+                            "hacc_penalty": hacc_p,
+                            "hacc_occur": hacc_c,
+                            "ovs_penlty": ovs_p.toLocaleString('en'),
+                            "ovs_duration": ovs_c,
+                            "drvtime_penalty": drvt_p,
+                            "drvtime_mins": drt_m,
+                            "resting_penalty": rst_p,
+                            "score": t_score
+                        }
+                        var dscSTemp = _.template($("#dsc-data-single").html());
+                        dt.row.add($(dscSTemp({"dsc": dsc})));
+                        dt.draw();
+                        $("#unit-list").find("#" + uid).children(".spinner-3d").hide();
+                        uQueue = _.without(uQueue, uid);
+                        localStorage.setItem("unit_squeue",JSON.stringify(uQueue));
+                        localStorage.setItem("queue-counter",Qcounter+1);
+
+                    }else{
+                        alert(errorCodes[code]);
+                    }
+                });
+        });
+     } 
 };
 
 var loadGroupScoreCard = function(resid, ugid, units){
@@ -1379,7 +1547,8 @@ var onLoad = function(){
 
 
 $(document).ready( function () {
-        
+    localStorage.removeItem("unit_squeue");
+    localStorage.removeItem("queue-counter");
     moment.tz.setDefault("Africa/Kampala");
 
     var aTarget = $(".active").children("input").prop("id");
@@ -1466,16 +1635,20 @@ $(document).ready( function () {
             });
         }
         // if unitQueueArray doesnt exist in local storage- create it
-        if(!localStorage.getItem("unit_squeue")) localStorage.setItem("unit_squeue",JSON.stringify([]));
+        if(!localStorage.getItem("unit_squeue")) {
+            localStorage.setItem("unit_squeue",JSON.stringify([]));
+            localStorage.setItem("queue-counter",1);
+        }
         var uQueue = JSON.parse(localStorage.getItem("unit_squeue"));
 
         // acheck if the processqueueArray is empty : if yes, add it to the array and proceed to score else add it to the process array.
         uQueue.push(id);
         localStorage.setItem("unit_squeue",JSON.stringify(uQueue));
-        if(uQueue.length == 1) loadUnitScoreCard(id);
-        
+              
         console.log("uQueue =====");
         console.log(uQueue);
+
+        if(uQueue.length == 1) loadUnitScoreCard(id);
     });
     onLoad();
 

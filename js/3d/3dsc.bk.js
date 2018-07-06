@@ -1358,7 +1358,7 @@ var getDriverScoreFactors = function(){
                                         }
 
                                         if((d_name == "unknown") && eco_rows[r].c[3].t){
-                                            d_name = ovs_rows[r].c[3].t;
+                                            d_name = eco_rows[r].c[3].t;
                                         }
                                     }
                                     console.log("eco driving penalty total " + t_penalty);
