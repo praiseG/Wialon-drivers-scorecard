@@ -857,8 +857,21 @@ var loadUnitScoreCard = function(s_uid){
                         localStorage.setItem("unit_squeue",JSON.stringify(uQueue));
                         localStorage.setItem("queue-counter",Qcounter+1);
 
+                    }else if(code == 0 && obj[0].reportResult.tables.length == 0){
+                        $("#unit-list").find("#" + uid).children(".spinner-3d").hide();
+                        uQueue = _.without(uQueue, uid);
+                        localStorage.setItem("unit_squeue",JSON.stringify(uQueue));
+                        new PNotify({
+                            text: 'No Data Found for Unit' + u_name,
+                            type: 'error'
+                        });
                     }else{
-                        alert(errorCodes[code]);
+                        new PNotify({
+                            title: 'Oh No',
+                            text: errorCodes[code],
+                            type: 'error'
+                        });
+                        // alert(errorCodes[code]);
                     }
                 });
         });
@@ -1157,7 +1170,7 @@ var fetchScores = function(u_grp, interval_changed){
             }
             
             console.log("loding report now");
-            // loadGroupScoreCard(res_id, ugrpt_id, a_units);
+            loadGroupScoreCard(res_id, ugrpt_id, a_units);
         });
 };
 
@@ -1649,6 +1662,18 @@ $(document).ready( function () {
         console.log(uQueue);
 
         if(uQueue.length == 1) loadUnitScoreCard(id);
+    });
+
+    $("#unit-scores").on("click", ".remove-u", function(){
+        var row_id = parseInt($(this).closest("tr").index());
+        var uid = parseInt($(this).closest("tr").prop("id"));
+        var dt = $("#dsc-tbl-single").dataTable().api();
+        console.log("you clicked row id :" + row_id);
+        if(typeof row_id !== "undefined"){
+            dt.row(row_id).remove().draw();
+            $("#unit-list").find("#"+uid).children(".units-arrow").show();
+        }
+
     });
     onLoad();
 
