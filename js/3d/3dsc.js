@@ -803,7 +803,7 @@ var loadUnitScoreCard = function(s_uid){
                                 }
                                 ovs_c = r_tables[q].total[0];
                                 var t_sec = timeToSeconds(ovs_c);
-                                ovs_p = parseInt(t_sec/60);
+                                ovs_p = Math.trunc(parseFloat(t_sec/60));;
                                 t_penalty += ovs_p;
                                 console.log("Speeding penalty total " + t_penalty);
                             }else if( (r_tables[q].name == "unit_trips") && !('error' in obj[q+1])){ // process Trips parameters 
@@ -959,18 +959,18 @@ var loadGroupScoreCard = function(resid, ugid, units){
                                 console.log(vlns);
                                 for (var e=0; e < vlns.length; e++){
                                     if(vlns[e].c[1] == "Harsh Acceleration"){
-                                        hacc_c += parseInt(vlns[e].c[2]);
-                                        hacc_p += parseInt(vlns[e].c[3]);
-                                        t_penalty += parseInt(hacc_p);
+                                        hacc_c += parseInt(vlns[e].c[3]);
+                                        hacc_p += parseInt(vlns[e].c[2]);
                                     }else if(vlns[e].c[1] == "Harsh Braking"){
-                                        hbrk_c += parseInt(vlns[e].c[2]);
-                                        hbrk_p += parseInt(vlns[e].c[3]);
-                                        t_penalty += parseInt(hbrk_p);
+                                        hbrk_c += parseInt(vlns[e].c[3]);
+                                        hbrk_p += parseInt(vlns[e].c[2]);
                                     }
                                     if((d_name == "unknown") && vlns[e].c[4]){
                                         d_name = vlns[e].c[4];
                                     }
                                 }
+                                t_penalty += hbrk_p + hacc_p;
+                                console.log("t_pena eco:" + t_penalty);
                             }
                         }
                     }else if((r_tables[tb].name == "unit_group_speedings") && !('error' in obj[tb+1])){ //process speeding violations
@@ -980,9 +980,9 @@ var loadGroupScoreCard = function(resid, ugid, units){
                                 console.log("uf_name=" + uf_name);
                                 ovs_c = ovs_rows[rw].c[1];
                                 ovs_d = timeToSeconds(ovs_c);
-                                ovs_p = parseInt(ovs_d/60);
+                                ovs_p = Math.trunc(parseFloat(ovs_d/60));
                                 t_penalty += ovs_p;
-
+                                console.log("t_pena ovs:" + t_penalty);
                                 if((d_name == "unknown") && ovs_rows[rw].c[2]){
                                     d_name = ovs_rows[rw].c[2];
                                 }
@@ -994,7 +994,7 @@ var loadGroupScoreCard = function(resid, ugid, units){
                             if(trp_rows[rw].c[0] == uf_name){
                                 var t_mil = (trp_rows[rw].c[1]).split(" ");
                                 t_mileage = t_mil[0]; 
-                                console.log("Total Mileage : " + t_mileage);
+                                console.log("Total Mileage for unit : " + t_mileage);
 
                                 if((d_name == "unknown") && trp_rows[rw].c[6]){
                                     d_name = trp_rows[rw].c[6];
@@ -1013,11 +1013,13 @@ var loadGroupScoreCard = function(resid, ugid, units){
                         
                     console.log("ovs count :" + ovs_c);
                     console.log("ovs pnalty :" + ovs_p);
+                    console.log("ovs secs :" + ovs_d);
                     console.log("hacc count :" + hacc_c);
                     console.log("hacc pnalty :" + hacc_p);
                     console.log("hbrk count :" + hbrk_c);
                     console.log("hbrk pnalty :" + hbrk_p);
                     console.log("total pnalty :" + t_penalty);
+                    console.log("total mileage :" + t_mileage);
                     var dsc = {
                         "id": row_id++,
                         "s_color": s_color,
@@ -1043,6 +1045,11 @@ var loadGroupScoreCard = function(resid, ugid, units){
                 }
             }
             dt.row(0).remove().draw();
+        }else if(code == 0 && obj[0].reportResult.tables.length == 0){
+            new PNotify({
+                text: 'No Data Found for Selected Interval',
+                type: 'error'
+            });
         }else{
             alert(errorCodes[code]);
         }
@@ -1316,7 +1323,7 @@ var getDriverScoreFactors = function(){
                                     }
                                     ovs_c = r_tables[q].total[0];
                                     var t_sec = timeToSeconds(ovs_c);
-                                    ovs_p += parseInt(t_sec/60);
+                                    ovs_p += Math.trunc(parseFloat(t_sec/60));;
                                     t_penalty += ovs_p;
                                     console.log("Speeding penalty total " + t_penalty);
                                 }else if( (r_tables[q].name == "unit_trips") && !('error' in obj[q+1])){ // process Trips parameters 
