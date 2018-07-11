@@ -1391,7 +1391,9 @@ var vlrReport = function(gid){
     $('#vlr-tbl').DataTable( {
         "pageLength": 12,
         "language": {
-            "emptyTable": "No Units Found"
+            "emptyTable": "No Units Found",
+            "search": "_INPUT_",
+            "searchPlaceholder": "Search..."
           },
         dom: 'Bfrtip',
         buttons: [
@@ -1405,6 +1407,7 @@ var vlrReport = function(gid){
         ]
     });
     fetchUnits(gid);
+    // fetchUnitsRecur(gid);QV7337997528
 };
 
 var dlrReport = function(){
@@ -1432,7 +1435,11 @@ var dlrReport = function(){
             },
             'pdf', 
             'print',
-        ]
+        ],
+        "language": {
+            "search": "_INPUT_",
+            "searchPlaceholder": "Search..."
+        }
     });
 
     fetchDrivers();
@@ -1453,11 +1460,15 @@ var dscReport = function(gid, interval_changed){
         $('#units-tbl').DataTable({
             "scrollY":   "350px",
             "scrollCollapse": true,
-            "paging":         false
+            "paging":         false,
+            "language": {
+                "search": "_INPUT_",
+                "searchPlaceholder": "Search..."
+            }
         });
     }
     $("#unit-scores").html(cTitles);
-    $('#dsc-tbl').DataTable( {
+    $('#dsc-tbl').DataTable({
         "language": {
             "emptyTable": "No data available for selected interval"
           },
@@ -1471,6 +1482,10 @@ var dscReport = function(gid, interval_changed){
             'pdf', 
             'print'
         ],
+        "language": {
+            "search": "_INPUT_",
+            "searchPlaceholder": "Search..."
+        }
         // "columnDefs": [
         //     {
         //         "targets": [ 3 ],
@@ -1633,7 +1648,9 @@ $(document).ready( function () {
             $("#unit-scores").html(uTitles);
             $("#dsc-tbl-single").DataTable( {
                 "language": {
-                    "emptyTable": "Loading Data.."
+                    "emptyTable": "Loading Data..",
+                    "search": "_INPUT_",
+                    "searchPlaceholder": "Search..."
                 },
                 dom: 'Bfrtip',
                 buttons: [

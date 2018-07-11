@@ -48,8 +48,8 @@
   <body>
     <nav class="navbar navbar-expand-lg  navbar-dark bg-dark">
             <div class="container">
-            <a class="navbar-brand text-hide" href="#"><img src="./img/3dsc-logo-2.png" height="50px"></a>
-                        
+            <a class="navbar-brand text-hide" href="#"><img src="./img/3dsc-logo-2.png" height="42px"></a>
+                
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav mr-auto">
                 <li class="nav-item active">&nbsp;</li>
@@ -64,7 +64,7 @@
         </div> 
         <div class="row row-3d">
             <div class="float-left">
-                <select class="custom-select" id="rTemplates">
+                <select class="custom-select report-select-3d" id="rTemplates">
                     <option class="select-option" >Select Report Template</option>
                     <option class="select-option" value="Drivers_Score_Card" id="t-dsc">Drivers Score Card</option>
                     <option class="select-option"  value="Drivers_List_Report" id="t-dlr">Drivers List Report</option>
@@ -79,7 +79,7 @@
                     <!-- <option class="select-option" id="" selected>All Units</option> -->
                 </select>
             </div>
-            <div class="btn-group btn-group-toggle ml-4 date-displays" data-toggle="buttons" id="dTargets">
+            <div class="btn-group btn-group-toggle ml-4 date-displays btn-interval" data-toggle="buttons" id="dTargets">
                 <label class="btn btn-outline-secondary active">
                   <input type="radio" name="options" id="yDate" autocomplete="off" checked> Yesterday
                 </label>
@@ -113,10 +113,10 @@
                
         </div>
         <div class="row" id="rpt-dsc">
-               <div class="col-md-3" id="unit-list">
+               <div class="col-md-2 col-md-u" id="unit-list">
                     
                </div>
-               <div class="col-md-9" id="unit-scores"></div>
+               <div class="col-md-10" id="unit-scores"></div>
         </div>
         <div id="reprt-data-sc"></div>
          <div id="reprt-data"></div>

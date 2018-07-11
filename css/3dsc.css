@@ -4,14 +4,16 @@ body{
 .navbar{
     /* border-bottom: 1.4px solid red; */
     margin-bottom: 0px;
+    padding: 0rem 0rem !important;
 }
 
 .navbar-brand{
     padding: 0px;
+    margin-left: 0px !important;
 }
 
 .dashboard-bg{
-    background-image: url("../img/dashboard-bg.png");
+    background-image: url("../img/dashboard2-bg.png");
     background-repeat: no-repeat;
     background-size: 1317px 70px !important;
     opacity: 0.8;
@@ -20,8 +22,8 @@ body{
 .row-resized{
     margin-left: 0px !important;
     margin-right: 0px !important;
-    margin-bottom: 35px;
-    height: 60px;
+    margin-bottom: 15px;
+    height: 40px;
     /* border-radius: .3rem; */
     border-bottom-left-radius: .3rem;
     border-bottom-right-radius: .3erm;
@@ -37,8 +39,9 @@ body{
     margin-left: 0px !important;
     margin-right: 0px !important;
     border-bottom: 3px solid #E9ECEF;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     border-radius: .3rem;
+    height: 30px !important;
 }
 
 .btn-toolbar > *,
@@ -83,7 +86,7 @@ select > option{
 .report-heading{
     color: #AAAAAB !important;
     font-weight: bold;
-    margin: 35px auto;
+    margin: 10px auto;
     font-size: 17px;
 }
 
@@ -105,7 +108,28 @@ select > option{
     border-color: #E9ECEF!important;
 }
 
-.group-select-3d{
+.group-select-3d, .report-select-3d{
     min-width: 150px !important;
+    height: 27px !important;
+    padding: .200rem 1.75rem .375rem .50rem !important
 }
 
+.col-md-u{
+    padding-right: 5px !important;
+    border-right: 1px solid #E9ECEF !important;
+}
+
+button.dt-button{
+    padding: 0.2em 0.5em !important;
+}
+
+.btn-interval > .btn{
+    padding: .2000rem .50rem !important;
+    border-radius: 0px !important;
+}
+
+nav > .container{
+    padding-right: 0px !important;
+    padding-left: 0px !important;
+    max-width: 1280px !important;
+}
