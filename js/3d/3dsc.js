@@ -1484,10 +1484,14 @@ var dscReport = function(gid, interval_changed){
             'csv', 
             {
                 extend: 'excelHtml5',
-                title: 'Drivers Score Card'
+                title: 'Drivers Score Card',
+                exportOptions: {
+                    columns: ':visible'
+                }
             },
             'pdf', 
-            'print'
+            'print',
+            'colvis'
         ],
         "language": {
             "search": "_INPUT_",
@@ -1664,10 +1668,14 @@ $(document).ready( function () {
                     'csv', 
                     {
                         extend: 'excelHtml5',
-                        title: 'Drivers Score Card'
+                        title: 'Drivers Score Card',
+                        exportOptions: {
+                            columns: ':visible'
+                        }
                     },
                     'pdf', 
-                    'print'
+                    'print',
+                    'colvis'
                 ]
             });
         }
