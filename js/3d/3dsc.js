@@ -911,6 +911,7 @@ var loadGroupScoreCard = function(resid, ugid, units){
         if (code === 0 && obj && obj.length && !('error' in obj[0]) && ('reportResult' in obj[0]) && obj[0].reportResult.tables.length > 0) {
             console.log("report successful");
             console.log(units);
+            var z_scores = [];
             //run through each unit and check its vaue in the table
             for (var n = 0; n < units.length; n++){
                 var unit = units[n];
@@ -1042,7 +1043,34 @@ var loadGroupScoreCard = function(resid, ugid, units){
                     }
                     var dscTemp = _.template($("#dsc-data").html());
                     dt.row.add($(dscTemp({"dsc": dsc})));
+                }else{
+                    z_scores.push({
+                        "s_color": "green",
+                        "transporter_id":tp_name,
+                        "drv_name": d_name,
+                        "drv_lic": d_lic,
+                        "tot_mileage": t_mileage.toLocaleString('en') ,
+                        "vehicle_license": u_lic,
+                        "site_name":u_site_name,
+                        "hbrk_penalty": hbrk_p,
+                        "hbrk_occur": hbrk_c,
+                        "hacc_penalty": hacc_p,
+                        "hacc_occur": hacc_c,
+                        "ovs_penlty": ovs_p,
+                        "ovs_duration": ovs_c,
+                        "drvtime_penalty": drvt_p,
+                        "drvtime_mins": drt_m,
+                        "resting_penalty": rst_p,
+                        "score": t_score
+                    });
                 }
+            }
+            if(z_scores.length > 0){
+                _.each(z_scores, function(scr, index, list){
+                    scr["id"] = row_id++;
+                    var dscTemp = _.template($("#dsc-data").html());
+                    dt.row.add($(dscTemp({"dsc": scr})));
+                });
             }
             dt.row(0).remove().draw();
         }else if(code == 0 && obj[0].reportResult.tables.length == 0){
