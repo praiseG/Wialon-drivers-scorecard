@@ -1301,7 +1301,6 @@ var getDriverScoreFactors = function(){
 
                     //execute and process report
                     wialon.core.Remote.getInstance().remoteCall('core/batch', params, function (code, obj) {
-                        console.log("closure id*******" + i);
                         console.log("code remote: " + code);
                         console.log(obj);
                         if (code === 0 && obj && obj.length && !('error' in obj[0]) && ('reportResult' in obj[0]) && obj[0].reportResult.tables.length > 0) {
