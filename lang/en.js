@@ -8,6 +8,7 @@ var TRANSLATIONS = {
     "Yesterday": "",
     "Week": "",
     "Month": "",
+    "Day":"",
     "Custom": "",
     "Previous": "",
     "Next": "",

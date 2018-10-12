@@ -1,6 +1,7 @@
 /// Global event handlers
 var callbacks = {};
 
+// Add more Error codes from Wialon Documentation
 var errorCodes = {
     "1": "Invalid session",
     "2": "Invalid service name",
@@ -1540,7 +1541,6 @@ var dscReport = function(gid, interval_changed){
     fetchScores(gid, interval_changed);
 
 };
-
 
 // Appropriate report templates
 var loadReportTemplate = function(rTemp){
