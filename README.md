@@ -29,5 +29,5 @@ Working with apps in the GPS tracking system: http://docs.gurtam.com/en/hosting/
  * v1.0.2 (Jul 30, 2018)  
 - Vehicles List Report added
 
- * v1.0.3 (Aug 13, 2015)  
+ * v1.0.3 (Aug 13, 2018)  
 - Drivers ScoreFactors(Harsh Acceleration, Over Speeding, Harsh Breaking etc) added
