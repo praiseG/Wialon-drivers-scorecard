@@ -1,45 +1,39 @@
-**Edit a file, create a new file, and clone from Bitbucket in under 2 minutes**
+# Eco Driving, version 1.0.4: (Oct 16, 2015)
+This is WEB application based on Apps from Gurtam (http://apps.wialon.com).
 
-When you're done, you can delete the content in this README and update the file with details for others getting started with your repository.
+## Description:
+Eco Driving is an app for refined vehicle and driving-behaviour analysis.
+Estimation will be beased on the following parameters ‒ speed limits violations, harsh acceleration,
+harsh braking, cornering, and certain custom parameters (sensor data) to be taken into account.
+The system of norms and standards can be easily adjusted for speficic vehicle types and drivers;
+and it’s up to integrators to develop their approaches towards penalties/rewards based on Eco Driving results.
 
-*We recommend that you open this README in another tab as you perform the tasks below. You can [watch our video](https://youtu.be/0ocf7u76WSo) for a full demo of all the steps in this tutorial. Open the video in a new tab to avoid leaving Bitbucket.*
+## License:
+[The MIT License](../master/LICENSE-MIT)
 
----
+## Requirements:
+ * Browser: Google Chrome 20+, Firefox 15+, Safari 5+, IE 9+, Opera 10+
+ * Language: русский, English, Slovak, Estonian, Finnish, Spanish, Latvian, Hungarian, German, French
+ * Components: SDK
+ * URL params: Active SID, Base URL, Host URL, Language, Current user
 
-## Edit a file
+## Quick start:
+Apps activation through the management system: http://docs.gurtam.com/en/hosting/cms/apps/apps  
+Working with apps in the GPS tracking system: http://docs.gurtam.com/en/hosting/user/apps/apps
 
-You’ll start by editing this README file to learn how to edit a file in Bitbucket.
+## Release History
+ * v1.0 (Feb 20, 2015)  
+- initial release
 
-1. Click **Source** on the left side.
-2. Click the README.md link from the list of files.
-3. Click the **Edit** button.
-4. Delete the following text: *Delete this line to make a change to the README from Bitbucket.*
-5. After making your change, click **Commit** and then **Commit** again in the dialog. The commit page will open and you’ll see the change you just made.
-6. Go back to the **Source** page.
+ * v1.0.1 (Jun 15, 2015)  
+- localization logic updated
+- fr and de languages added
 
----
+ * v1.0.2 (Jul 21, 2015)  
+- Harsh driving added
 
-## Create a file
+ * v1.0.3 (Aug 13, 2015)  
+- Rank added
 
-Next, you’ll add a new file to this repository.
-
-1. Click the **New file** button at the top of the **Source** page.
-2. Give the file a filename of **contributors.txt**.
-3. Enter your name in the empty file space.
-4. Click **Commit** and then **Commit** again in the dialog.
-5. Go back to the **Source** page.
-
-Before you move on, go ahead and explore the repository. You've already seen the **Source** page, but check out the **Commits**, **Branches**, and **Settings** pages.
-
----
-
-## Clone a repository
-
-Use these steps to clone from SourceTree, our client for using the repository command-line free. Cloning allows you to work on your files locally. If you don't yet have SourceTree, [download and install first](https://www.sourcetreeapp.com/). If you prefer to clone from the command line, see [Clone a repository](https://confluence.atlassian.com/x/4whODQ).
-
-1. You’ll see the clone button under the **Source** heading. Click that button.
-2. Now click **Check out in SourceTree**. You may need to create a SourceTree account or log in.
-3. When you see the **Clone New** dialog in SourceTree, update the destination path and name if you’d like to and then click **Clone**.
-4. Open the directory you just created to see your repository’s files.
-
-Now that you're more familiar with your Bitbucket repository, go ahead and add a new file locally. You can [push your change back to Bitbucket with SourceTree](https://confluence.atlassian.com/x/iqyBMg), or you can [add, commit,](https://confluence.atlassian.com/x/8QhODQ) and [push from the command line](https://confluence.atlassian.com/x/NQ0zDQ).
+ * v1.0.4 (Oct 16, 2015)  
+- US and Imperial metrics fixed
