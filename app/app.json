@@ -1,53 +1,40 @@
 {
-	"name": "3d_drivers_score_card",
-	"url_name": "3ddriversscorecard",
-	"title": "3D Drivers Score Card",
-	"description": "3D Custom Drivers Score Card.",
-	"author": {
-		"name": "Praise Mariah",
-		"url": "http://gurtam.com"
-	},
-	"licenses": [
-		{
-			"type":" MIT",
-			"url": "https://github.com/wialon/wialon-app-simple/blob/master/LICENSE-MIT"
-		}
-	],
-	"dependencies": {
-		"jquery": "1.8.3"
-	},
-	"modules": [
-		"sdk"
-	],
-	"params": [
-		"Active SID",
-		"Base URL",
-		"Host URL",
-		"Language",
-		"Current user"
-	],
-	"docs": {},
-	"links": {
-		"github": ""
-	},
-	"language": [
-		"en"
-	],
-	"build_date": "2018-06-05",
-	"release_date": "2018-06-06",
-	"version": "1.0.4",
-	"keywords": [
-		"wialon",
-		"wialon-apps"
-	],
-	"browser": {
-		"ie": "9+",
-		"opera": "10+",
-		"safari": "10+",
-		"chrome": "20+",
-		"firefox": "15+"
-	},
-	"logo": "logo.png",
-	"images_path": "images",
-	"desc_path": "desc"
+  "name": "drivers_score_card",
+  "url_name": "driversscorecard",
+  "title": "Drivers Score Card",
+  "description": "Wialon Drivers Score Card.",
+  "author": {
+    "name": "Praise Mariah",
+    "url": "https://github.com/praiseG"
+  },
+  "licenses": [
+    {
+      "type": " MIT",
+      "url": "https://github.com/wialon/wialon-app-simple/blob/master/LICENSE-MIT"
+    }
+  ],
+  "dependencies": {
+    "jquery": "1.8.3"
+  },
+  "modules": ["sdk"],
+  "params": ["Active SID", "Base URL", "Host URL", "Language", "Current user"],
+  "docs": {},
+  "links": {
+    "github": ""
+  },
+  "language": ["en"],
+  "build_date": "2018-06-05",
+  "release_date": "2018-06-06",
+  "version": "1.0.4",
+  "keywords": ["wialon", "wialon-apps"],
+  "browser": {
+    "ie": "9+",
+    "opera": "10+",
+    "safari": "10+",
+    "chrome": "20+",
+    "firefox": "15+"
+  },
+  "logo": "logo.png",
+  "images_path": "images",
+  "desc_path": "desc"
 }
